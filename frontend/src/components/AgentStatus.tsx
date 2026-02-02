@@ -36,7 +36,7 @@ export function AgentStatus() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               className={`
-                relative flex items-center gap-4 p-4 rounded-xl
+                relative flex items-center gap-4 p-4 rounded-t-xl rounded-b-none
                 border transition-all duration-300
                 ${isActive 
                   ? 'bg-slate-800/80 border-slate-600' 
@@ -104,15 +104,20 @@ export function AgentStatus() {
                 <p className="text-sm text-slate-500">{agent.description}</p>
               </div>
 
-              {/* Progress bar for active agent */}
+              {/* Processing loop animation for active agent */}
               {isActive && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700 overflow-hidden">
                   <motion.div
                     className="h-full"
                     style={{ backgroundColor: agent.color }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 30, ease: 'linear' }}
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ 
+                      duration: 1.5, 
+                      ease: 'easeInOut',
+                      repeat: Infinity,
+                      repeatType: 'loop'
+                    }}
                   />
                 </div>
               )}

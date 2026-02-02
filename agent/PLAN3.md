@@ -8,11 +8,16 @@
 
 ## Chunk 1: UI/Style Fixes (Start Here)
 
-### Step 1.1: AgentStatus Animation Line Fix
+### Step 1.1: AgentStatus Animation Line Fix ✅
 - **Issue:** Agent boxes have rounded bottom corners, breaking animation line continuity
 - **Fix:** Remove rounded bottom corners (`rounded-b-none`) from agent boxes
 - **Change:** Progress animation from "fill to 100%" to "processing loop" (indeterminate)
 - **Files:** `frontend/src/components/AgentStatus.tsx`
+
+**Changes Made:**
+1. Changed `rounded-xl` to `rounded-t-xl rounded-b-none` - bottom corners now square
+2. Changed animation from `width: 0% → 100%` to `x: -100% → 100%` with `repeat: Infinity`
+3. Animation now shows a sliding bar that loops continuously (processing effect)
 
 **Validation:** Check that animation line connects perfectly between agent boxes, and shows a looping "processing" effect instead of fill-to-100%
 
