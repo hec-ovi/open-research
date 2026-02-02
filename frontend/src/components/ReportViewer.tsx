@@ -17,6 +17,14 @@ export function ReportViewer() {
 
   if (!finalReport || status !== 'completed') return null;
 
+  // Safety checks for report data
+  const title = finalReport.title || 'Untitled Report';
+  const wordCount = finalReport.wordCount || 0;
+  const sourcesUsed = finalReport.sourcesUsed || [];
+  const sections = finalReport.sections || [];
+  const executiveSummary = finalReport.executiveSummary || '';
+  const confidenceAssessment = finalReport.confidenceAssessment || '';
+
   const handleDownloadMarkdown = () => {
     const markdown = `# ${finalReport.title}
 
@@ -25,7 +33,7 @@ ${finalReport.executiveSummary}
 ## Report Details
 
 **Word Count:** ${finalReport.wordCount}
-**Sources Used:** ${finalReport.sourcesUsed.length}
+**Sources Used:** ${sourcesUsed.length}
 **Confidence:** ${finalReport.confidenceAssessment}
 
 ${finalReport.sections.map(s => `
@@ -36,14 +44,14 @@ ${s.content}
 
 ## Sources
 
-${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.reliability}`).join('\n')}
+${sourcesUsed.map((s, i) => `${i + 1}. [${s.title || 'Untitled'}](${s.url}) - ${s.reliability || 'unknown'}`).join('\n')}
 `;
 
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${finalReport.title.toLowerCase().replace(/\s+/g, '-')}.md`;
+    a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -60,13 +68,13 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
     // Title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text(finalReport.title, margin, y);
+    doc.text(title, margin, y);
     y += 15;
 
     // Metadata
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Word Count: ${finalReport.wordCount} | Sources: ${finalReport.sourcesUsed.length}`, margin, y);
+    doc.text(`Word Count: ${wordCount} | Sources: ${sourcesUsed.length}`, margin, y);
     y += 10;
 
     // Executive Summary
@@ -76,12 +84,12 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
     y += 8;
     doc.setFontSize(11);
     doc.setTextColor(50, 50, 50);
-    const summaryLines = doc.splitTextToSize(finalReport.executiveSummary, maxWidth);
+    const summaryLines = doc.splitTextToSize(executiveSummary, maxWidth);
     doc.text(summaryLines, margin, y);
     y += summaryLines.length * 6 + 10;
 
     // Sections
-    finalReport.sections.forEach((section) => {
+    sections.forEach((section) => {
       // Check if we need a new page
       if (y > 250) {
         doc.addPage();
@@ -108,17 +116,17 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
 
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Sources (${finalReport.sourcesUsed.length})`, margin, y);
+    doc.text(`Sources (${sourcesUsed.length})`, margin, y);
     y += 10;
 
     doc.setFontSize(10);
-    finalReport.sourcesUsed.forEach((source, index) => {
+    sourcesUsed.forEach((source, index) => {
       if (y > 280) {
         doc.addPage();
         y = 20;
       }
       doc.setTextColor(50, 50, 50);
-      const sourceText = `${index + 1}. ${source.title} (${source.reliability})`;
+      const sourceText = `${index + 1}. ${source.title || 'Untitled'} (${source.reliability || 'unknown'})`;
       const sourceLines = doc.splitTextToSize(sourceText, maxWidth);
       doc.text(sourceLines, margin, y);
       y += sourceLines.length * 5 + 3;
@@ -129,7 +137,7 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
       y += urlLines.length * 4 + 5;
     });
 
-    doc.save(`${finalReport.title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+    doc.save(`${title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
   };
 
   return (
@@ -139,8 +147,8 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
       className="w-full"
     >
       <Card
-        title={finalReport.title}
-        subtitle={`${finalReport.wordCount} words • ${finalReport.sourcesUsed.length} sources`}
+        title={title}
+        subtitle={`${wordCount} words • ${sourcesUsed.length} sources`}
         headerAction={
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
@@ -159,12 +167,12 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
           <h4 className="text-sm font-medium text-slate-400 mb-2 uppercase tracking-wider">
             Executive Summary
           </h4>
-          <p className="text-slate-300 leading-relaxed">{finalReport.executiveSummary}</p>
+          <p className="text-slate-300 leading-relaxed">{executiveSummary}</p>
         </div>
 
         {/* Sections */}
         <div className="space-y-6">
-          {finalReport.sections.map((section, index) => (
+          {sections.map((section, index) => (
             <div key={index} className="border-b border-slate-800 pb-6 last:border-0">
               <h4 className="text-lg font-semibold text-white mb-3">{section.heading}</h4>
               <div className="prose prose-invert prose-sm max-w-none">
@@ -176,13 +184,13 @@ ${finalReport.sourcesUsed.map((s, i) => `${i + 1}. [${s.title}](${s.url}) - ${s.
 
         {/* Sources */}
         <div className="mt-8 pt-6 border-t border-slate-800">
-          <SourceViewer sources={finalReport.sourcesUsed} />
+          <SourceViewer sources={sourcesUsed} />
         </div>
 
         {/* Confidence Assessment */}
         <div className="mt-6 p-4 bg-slate-800/30 rounded-lg">
           <h4 className="text-sm font-medium text-slate-400 mb-2">Confidence Assessment</h4>
-          <p className="text-sm text-slate-300">{finalReport.confidenceAssessment}</p>
+          <p className="text-sm text-slate-300">{confidenceAssessment}</p>
         </div>
       </Card>
     </motion.div>

@@ -106,13 +106,13 @@ export function AgentStatus() {
 
               {/* Progress bar for active agent */}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700 rounded-b-xl overflow-hidden">
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-700 overflow-hidden">
                   <motion.div
                     className="h-full"
                     style={{ backgroundColor: agent.color }}
                     initial={{ width: '0%' }}
-                    animate={{ width: ['0%', '100%', '0%'] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 30, ease: 'linear' }}
                   />
                 </div>
               )}

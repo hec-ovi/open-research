@@ -178,9 +178,10 @@ class ResearchGraph:
         sub_questions = [sq.get("question", "") for sq in result["plan"]]
         await self._emit_event(
             "planner_complete",
-            f"Generated {len(result['plan'])} sub-questions: {', '.join(sub_questions[:3])}{'...' if len(sub_questions) > 3 else ''}",
+            f"Generated {len(result['plan'])} sub-questions to research",
             session_id,
-            sub_questions_count=len(result["plan"])
+            sub_questions_count=len(result["plan"]),
+            questions=sub_questions
         )
         
         logger.info(f"[Graph] Planner generated {len(result['plan'])} sub-questions")
@@ -236,12 +237,16 @@ class ResearchGraph:
         
         state["sources"] = unique_sources
         
+        # Get sample URLs for display (first 5)
+        sample_urls = [s.get("url", "") for s in unique_sources[:5] if s.get("url")]
+        
         await self._emit_event(
             "finder_complete",
             f"Discovered {len(unique_sources)} unique sources from {len(domains)} different domains",
             session_id,
             sources_count=len(unique_sources),
-            domains_count=len(domains)
+            domains_count=len(domains),
+            urls=sample_urls
         )
         
         logger.info(f"[Graph] Finder complete: {len(unique_sources)} unique sources")

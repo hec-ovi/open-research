@@ -108,7 +108,7 @@ export function MissionControl() {
               <AgentStatus />
             </Card>
             
-            <SessionList />
+            <SessionList onViewReport={scrollToReport} />
           </div>
 
           {/* Right Column - Event Log */}
@@ -131,14 +131,14 @@ export function MissionControl() {
           </div>
         </div>
 
-        {/* Keyboard Shortcuts Footer */}
+        {/* System Status Footer */}
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className="mt-12 pt-8 border-t border-slate-800/50"
         >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="flex flex-wrap justify-center gap-8">
             <div className="flex items-center gap-3 text-sm text-slate-500">
               <Terminal className="w-5 h-5" />
               <div>
@@ -161,9 +161,6 @@ export function MissionControl() {
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-600">v0.1.0 • MIT License</p>
             </div>
           </div>
         </motion.footer>

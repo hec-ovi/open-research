@@ -15,12 +15,17 @@ interface Session {
   query: string;
   status: string;
   created_at: string;
+  has_report?: boolean;
 }
 
-export function SessionList() {
+interface SessionListProps {
+  onViewReport?: () => void;
+}
+
+export function SessionList({ onViewReport }: SessionListProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const { sessionId: currentSessionId } = useResearchStore();
+  const { sessionId: currentSessionId, completeResearch, startResearch, setQuery } = useResearchStore();
 
   const fetchSessions = async () => {
     try {
@@ -119,12 +124,29 @@ export function SessionList() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
+              onClick={async () => {
+                if (session.status === 'completed' && session.has_report) {
+                  try {
+                    const response = await fetch(`/api/research/sessions/${session.session_id}/report`);
+                    const data = await response.json();
+                    if (data.status === 'success' && data.report) {
+                      setQuery(data.query);
+                      startResearch(session.session_id);
+                      completeResearch(data.report);
+                      onViewReport?.();
+                    }
+                  } catch (err) {
+                    console.error('Failed to load session report:', err);
+                  }
+                }
+              }}
               className={`
                 p-3 rounded-lg border transition-all cursor-pointer
                 ${session.session_id === currentSessionId 
                   ? 'bg-blue-500/10 border-blue-500/30' 
                   : 'bg-slate-800/30 border-slate-800 hover:bg-slate-800/50'
                 }
+                ${session.status === 'completed' && session.has_report ? 'hover:border-emerald-500/30' : ''}
               `}
             >
               <div className="flex items-center gap-3">

@@ -126,6 +126,36 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
             {event.message}
           </p>
         )}
+        {/* Display URLs for finder events */}
+        {event.urls && event.urls.length > 0 && (
+          <div className="mt-2 space-y-0.5">
+            {event.urls.map((url: string, idx: number) => (
+              <a
+                key={idx}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-emerald-400/80 hover:text-emerald-400 truncate transition-colors"
+                title={url}
+              >
+                ↳ {new URL(url).hostname}
+              </a>
+            ))}
+          </div>
+        )}
+        {/* Display questions for planner events */}
+        {event.questions && event.questions.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {event.questions.map((q: string, idx: number) => (
+              <div 
+                key={idx}
+                className="text-xs text-blue-400/90 pl-2 border-l-2 border-blue-500/30"
+              >
+                {idx + 1}. {q}
+              </div>
+            ))}
+          </div>
+        )}
         {event.error && (
           <p className="text-xs text-red-400 mt-0.5">{event.error}</p>
         )}
@@ -168,7 +198,7 @@ export function TraceLog({ onViewReport }: TraceLogProps) {
       
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px] space-y-1 pr-2"
+        className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px] space-y-2 pr-2"
       >
         <AnimatePresence mode="popLayout">
           {displayEvents.length === 0 ? (

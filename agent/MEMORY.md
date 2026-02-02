@@ -507,3 +507,30 @@ Ready for Phase 2: The First Agent (Planner)
   - Header is now a reusable, testable component
   - Connection status visible at all times
 
+---
+
+### Feature - PLAN2 Polish & Bug Fixes Complete
+- **Context:** User feedback from testing identified 8 improvements and 1 critical bug
+- **Action:**
+  **Bug Fixes:**
+  1. **ReportViewer crash fix:** Added null-safety for `finalReport.sourcesUsed`, `sections`, `title`
+  2. **AgentStatus rounded corners:** Removed `rounded-b-xl` from progress bar container
+  3. **Progress animation:** Changed from `['0%', '100%', '0%']` looping to `100%` with 30s linear fill
+  
+  **UI Improvements:**
+  4. **Event spacing:** Changed `space-y-1` to `space-y-2` in TraceLog
+  5. **Finder links:** Backend emits `urls` array in `finder_complete`, frontend displays hostnames as clickable links
+  6. **Planner formatting:** Backend emits `questions` array, frontend displays numbered list with blue border
+  7. **Session click:** Added `/api/research/sessions/{id}/report` endpoint, clicking completed session loads its report
+  8. **Footer cleanup:** Removed version/license, centered 3 items (Backend, Inference, Connection)
+  
+  **Files Modified:**
+  - `frontend/src/components/ReportViewer.tsx` - null-safety, PDF/Markdown downloads
+  - `frontend/src/components/AgentStatus.tsx` - removed rounded corners, fixed animation
+  - `frontend/src/components/TraceLog.tsx` - spacing, URL display, question formatting
+  - `frontend/src/components/SessionList.tsx` - click to view report
+  - `frontend/src/pages/MissionControl.tsx` - footer layout
+  - `backend/app/core/graph.py` - emit URLs and questions in events
+  - `backend/app/api/routes.py` - new session report endpoint
+  - `frontend/src/types/index.ts` - added `urls` and `questions` to TraceEvent
+- **Result:** All 8 improvements implemented. UI is polished and professional. No console errors.

@@ -734,9 +734,53 @@ async def list_research_sessions() -> dict:
                     "query": s.state.get("query", "")[:50] + "...",
                     "status": "running" if s.is_running() else "completed",
                     "created_at": s.created_at,
+                    "has_report": s.state.get("final_report") is not None,
                 }
                 for s in sessions[:10]  # Limit to 10 most recent
             ],
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.get("/api/research/sessions/{session_id}/report")
+async def get_session_report(session_id: str) -> dict:
+    """
+    Get the final report for a specific session.
+    
+    Args:
+        session_id: The session ID
+        
+    Returns:
+        dict: Session report
+    """
+    try:
+        manager = get_research_manager()
+        session = manager.get_session(session_id)
+        
+        if not session:
+            return {
+                "status": "error",
+                "error": f"Session {session_id} not found",
+            }
+        
+        final_report = session.state.get("final_report")
+        if not final_report:
+            return {
+                "status": "error",
+                "error": "Report not yet available",
+            }
+        
+        return {
+            "status": "success",
+            "session_id": session_id,
+            "query": session.state.get("query", ""),
+            "report": final_report,
         }
     except Exception as e:
         import traceback
