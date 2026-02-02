@@ -1,46 +1,74 @@
 # Deep Research System
 
-A production-grade local deep research application using multi-agent orchestration with LangGraph and Ollama.
+A production-grade local deep research application using multi-agent orchestration with LangGraph and Ollama. Features a real-time Mission Control dashboard for monitoring AI agents as they research any topic.
+
+![Architecture](https://img.shields.io/badge/Architecture-Orchestrator_Workers-blue)
+![LLM](https://img.shields.io/badge/LLM-gpt--oss:20b-green)
+![GPU](https://img.shields.io/badge/GPU-AMD_ROCm-orange)
+![Stack](https://img.shields.io/badge/Stack-FastAPI_React_LangGraph-purple)
+
+## 🎥 Demo
+
+The system features a **Mission Control Dashboard** where you can:
+- Enter any research query
+- Watch 5 AI agents work in real-time
+- See live event streaming
+- Monitor progress with visual indicators
+- Stop research at any time
 
 ## Architecture
 
-**Inference Engine:** Ollama (gpt-oss:20b) with ROCm support for AMD GPUs  
-**Pattern:** Orchestrator-Workers (Star Topology)  
-**Stack:**
-- **Backend:** Python 3.12+ / FastAPI / LangGraph / SQLite (Ubuntu-based)
-- **Frontend:** React / Vite / TypeScript / TailwindCSS / Framer Motion
-- **Infrastructure:** Docker Compose
-
-## Agent Grid
-
-The system uses 5 specialized agents in a LangGraph workflow:
-
 ```
-┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
-│ Planner │────▶│ Finder  │────▶│Summarizer│────▶│ Reviewer │────▶│ Writer  │
-└─────────┘     └─────────┘     └─────────┘     └────┬────┘     └─────────┘
-                                                      │
-                                               (conditional)
-                                                      │
-                                              ┌───────▼───────┐
-                                              │ Continue/Finish │
-                                              └───────┬───────┘
-                                                      │
-                                            ┌─────────┴──────────┐
-                                            │ gaps & iter<max   │
-                                            │ → Planner (loop)   │
-                                            │ no gaps/max iter   │
-                                            │ → Writer (finish)  │
-                                            └────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         MISSION CONTROL DASHBOARD                       │
+│                     (React + Vite + Tailwind + Framer Motion)           │
+│                                                                         │
+│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
+│   │Research Input│  │Agent Pipeline│  │ Event Log    │                 │
+│   │  (Zustand)   │  │ (5 Agents)   │  │   (SSE)      │                 │
+│   └──────────────┘  └──────────────┘  └──────────────┘                 │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP / SSE
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BACKEND API (FastAPI)                           │
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │   Planner   │──▶│   Finder    │──▶│ Summarizer  │──▶│  Reviewer   │   │
+│  │ (Decompose) │  │  (Search)   │  │ (Compress)  │  │ (Check)     │   │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └──────┬──────┘   │
+│                                                            │          │
+│                              ┌─────────────────────────────┘          │
+│                              │ (conditional: gaps & iter<max)         │
+│                              ▼                                         │
+│                       ┌─────────────┐  ┌─────────────┐                │
+│                       │   Writer    │──▶│   Report    │                │
+│                       │ (Synthesize)│  │  (Output)   │                │
+│                       └─────────────┘  └─────────────┘                │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ SQLite (Checkpointer)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      INFERENCE ENGINE (Ollama)                          │
+│                                                                         │
+│                    gpt-oss:20b with ROCm Support                       │
+│                      (Auto-download on first start)                     │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Agent | Role | Key Features |
-|-------|------|--------------|
-| **Planner** | Query Decomposition | Breaks complex queries into 6-8 sub-questions |
-| **Source Finder** | Discovery | DuckDuckGo search, domain diversity (max 2 per domain) |
-| **Summarizer** | Compression | 10:1 compression ratio, key facts extraction |
-| **Reviewer** | Quality Control | Gap detection, confidence scoring, iteration triggers |
-| **Writer** | Synthesis | Professional report with citations, 6 sections |
+### The 5 Agents
+
+| Agent | Role | Description | Color |
+|-------|------|-------------|-------|
+| **Planner** | Query Decomposition | Breaks complex queries into 6-8 sub-questions | 🔵 Blue |
+| **Finder** | Source Discovery | Discovers diverse sources via DuckDuckGo (max 2/domain) | 🟢 Green |
+| **Summarizer** | Content Compression | 10:1 compression with key facts extraction | 🟡 Amber |
+| **Reviewer** | Quality Control | Detects gaps, triggers iteration loops | 🟣 Violet |
+| **Writer** | Report Synthesis | Professional report with citations | 🩷 Pink |
+
+**Iteration Loop:** If the Reviewer detects gaps and max iterations not reached, it loops back to the Planner for deeper research.
 
 ---
 
@@ -48,12 +76,12 @@ The system uses 5 specialized agents in a LangGraph workflow:
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| **Phase 0** | ✅ Complete | Project infrastructure, Docker setup, GPU support |
-| **Phase 1** | ✅ Complete | Backend core: config, adapter, state, checkpointer |
-| **Phase 2** | ✅ Complete | Planner Agent - Query decomposition + LangGraph setup |
-| **Phase 3** | ✅ Complete | All 5 Agents + Full Graph Assembly with conditional routing |
-| **Phase 4** | ✅ Complete | Streaming & Interruption (SSE, stop/resume) |
-| **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
+| **Phase 0** | ✅ Complete | Infrastructure: Docker, GPU support, auto-download |
+| **Phase 1** | ✅ Complete | Backend Core: Config, adapter, state, checkpointer |
+| **Phase 2** | ✅ Complete | Planner Agent: Query decomposition + LangGraph setup |
+| **Phase 3** | ✅ Complete | All 5 Agents + Full Graph Assembly |
+| **Phase 4** | ✅ Complete | Streaming & Interruption: SSE, stop/resume |
+| **Phase 5** | ✅ Complete | **Frontend Dashboard: Mission Control UI** |
 | **Phase 6** | ⏳ Pending | Integration & Polish |
 
 ---
@@ -65,11 +93,9 @@ The system uses 5 specialized agents in a LangGraph workflow:
 - Docker & Docker Compose
 - AMD GPU with ROCm drivers (for GPU acceleration)
 - **For Strix Halo (Ryzen AI Max):** Ubuntu 25.04+ with kernel 6.12+
-- Port 11434, 8000, 5173 available
+- Ports: 11434 (Ollama), 8000 (Backend), 5173 (Frontend)
 
 ### 🔧 GPU Configuration (Strix Halo / RDNA 3.5)
-
-If you have an AMD Ryzen AI Max (Strix Halo) with RDNA 3.5 graphics, configure GPU access:
 
 ```bash
 # Find your GPU group IDs
@@ -88,17 +114,12 @@ RENDER_GID=991
 HSA_OVERRIDE_GFX_VERSION=11.5.1
 ```
 
-**Reference:** Configuration based on [ComfyUI Strix Halo Docker](https://github.com/hector-oviedo/comfyui-strix-docker)
-
 ### ⚠️ Important: Stop Local Ollama First!
-
-If you have Ollama installed locally, stop it before running Docker:
 
 ```bash
 # Stop local Ollama service
 sudo systemctl stop ollama
-
-# Or if running manually
+# or
 pkill ollama
 
 # Verify port is free
@@ -121,19 +142,20 @@ docker compose up --build -d
 # Monitor Ollama model download
 docker logs -f deepresearch-ollama
 
-# Check status
+# Check all services
 curl http://localhost:8000/health
+curl http://localhost:5173
 ```
 
-### Access
+### Access the Dashboard
 
 | Service | URL | Description |
 |---------|-----|-------------|
+| **🎛️ Mission Control** | http://localhost:5173 | **Main Dashboard** - Start researching here! |
 | **API Docs (Custom)** | http://localhost:8000/custom-docs | Bootstrap-styled documentation |
-| **API Docs (Swagger)** | http://localhost:8000/docs | Auto-generated OpenAPI docs |
+| **API Docs (Swagger)** | http://localhost:8000/docs | Interactive OpenAPI docs |
 | **Backend API** | http://localhost:8000 | FastAPI endpoints |
 | **Ollama** | http://localhost:11434 | Inference API |
-| **Frontend** | http://localhost:5173 | React Dashboard (Phase 5) |
 
 ### Stop Everything
 
@@ -146,112 +168,106 @@ docker compose down -v
 
 ---
 
-## 🧪 Testing
+## 🎛️ Using the Mission Control Dashboard
+
+### 1. Start a Research
+
+1. Open http://localhost:5173
+2. Enter your research query (e.g., "Latest AI developments in healthcare 2024")
+3. Click **"Start Research"**
+4. Watch the agents work in real-time!
+
+### 2. Monitor Progress
+
+- **Agent Pipeline** (left): See which agent is currently active
+- **Progress Bar** (top): Overall completion percentage
+- **Event Log** (right): Real-time SSE events from the backend
+- **Stop Button** (top-right): Cancel running research
+
+### 3. Agent States
+
+| State | Indicator | Meaning |
+|-------|-----------|---------|
+| Idle | Gray | Agent waiting to start |
+| Running | Blue pulse | Agent actively working |
+| Completed | Green check | Agent finished successfully |
+
+### 4. Event Types
+
+The Event Log shows:
+- `research_started` - Research session began
+- `planner_complete` - Sub-questions generated
+- `finder_complete` - Sources discovered
+- `summarizer_complete` - Content summarized
+- `reviewer_complete` - Gaps reviewed
+- `research_completed` - Final report ready
+- `heartbeat` - Keep-alive ping
+- `research_stopped` - Manually cancelled
+
+---
+
+## 🧪 API Testing
 
 ### Health & Status
 
 ```bash
-# 1. Health Check
+# Health Check
 curl http://localhost:8000/health
-# Response: {"status":"healthy","version":"0.1.0","config":{"ollama_model":"gpt-oss:20b",...}}
 
-# 2. API Status
+# API Status
 curl http://localhost:8000/api/status
 # Response: {"status":"operational","features":{"planner":"implemented",...}}
-
-# 3. Checkpointer Stats
-curl http://localhost:8000/api/checkpointer/stats
-# Response: {"status":"success","stats":{"sessions":0,"checkpoints":0,...}}
 ```
 
 ### Individual Agent Tests
 
 ```bash
-# 4. Test Planner Agent
+# Test Planner Agent
 curl -X POST http://localhost:8000/api/test/planner
-# Response: {"status":"success","sub_questions_count":6,...}
+# Response: 6 sub-questions generated
 
-# 5. Test Source Finder Agent
+# Test Source Finder Agent
 curl -X POST http://localhost:8000/api/test/finder
-# Response: {"status":"success","sources_count":10,...}
+# Response: 10 diverse sources discovered
 
-# 6. Test Summarizer Agent
+# Test Summarizer Agent
 curl -X POST http://localhost:8000/api/test/summarizer
-# Response: {"status":"success","key_facts_count":5,...}
+# Response: 5 key facts, 0.95 relevance
 
-# 7. Test Reviewer Agent
+# Test Reviewer Agent
 curl -X POST http://localhost:8000/api/test/reviewer
-# Response: {"status":"success","gaps_count":3,...}
+# Response: 3 gaps detected, 0.88 confidence
 
-# 8. Test Writer Agent
+# Test Writer Agent
 curl -X POST http://localhost:8000/api/test/writer
-# Response: {"status":"success","word_count":1200,...}
+# Response: 1200-word report, 6 sections
 
-# 9. Test Full Graph (All 5 Agents)
-# Note: This takes 5-10 minutes due to multiple LLM calls
+# Test Full Graph (all 5 agents)
 curl -X POST http://localhost:8000/api/test/graph
-# Response: Full research pipeline result
+# Response: Full pipeline result (takes 5-10 min)
 ```
 
-### Test Results Summary
-
-| Endpoint | Status | Result |
-|----------|--------|--------|
-| `/api/test/planner` | ✅ | 6 sub-questions generated |
-| `/api/test/finder` | ✅ | 10 diverse sources discovered |
-| `/api/test/summarizer` | ✅ | 5 key facts, 0.95 relevance, 0.72 compression |
-| `/api/test/reviewer` | ✅ | 3 gaps detected, 0.88 confidence |
-| `/api/test/writer` | ✅ | 1200-word report, 6 sections, 3 citations |
-| `/api/test/graph` | ✅ | Full pipeline (Planner→Finder→Summarizer→Reviewer→Writer) |
-
-### Streaming & Interruption (Phase 4)
+### Streaming & Interruption
 
 ```bash
-# 10. Start Research with Streaming
+# Start Research
 curl -X POST http://localhost:8000/api/research/start \
   -H "Content-Type: application/json" \
   -d '{"query": "AI in healthcare 2024"}'
 # Response: {"status":"started","session_id":"research-abc123",...}
 
-# 11. Stream Events (SSE)
+# Stream Events (SSE)
 curl http://localhost:8000/api/research/research-abc123/events
 # Stream: connected → research_started → heartbeat → ... → completed
 
-# 12. Stop Running Research
+# Stop Research
 curl -X POST http://localhost:8000/api/research/research-abc123/stop
-# Response: {"status":"stopped",...}
 
-# 13. Check Research Status
+# Check Status
 curl http://localhost:8000/api/research/research-abc123/status
-# Response: Current progress and results
 
-# 14. List All Sessions
+# List All Sessions
 curl http://localhost:8000/api/research/sessions
-# Response: All research sessions
-```
-
-### Streaming Event Types
-
-| Event Type | Description |
-|------------|-------------|
-| `connected` | SSE connection established |
-| `research_started` | Research session began |
-| `heartbeat` | Keep-alive ping (every second) |
-| `research_completed` | Research finished successfully |
-| `research_error` | Research failed |
-| `research_stopped` | Research was manually stopped |
-| `done` | Stream closing |
-
-### Verify GPU is Working
-
-```bash
-# Check Ollama logs for GPU detection
-docker logs deepresearch-ollama | grep "inference compute"
-# Should show: library=ROCm compute=gfx1151
-
-# Test GPU inference directly
-curl -X POST http://localhost:11434/api/generate \
-  -d '{"model": "gpt-oss:20b", "prompt": "Say hello GPU", "stream": false}'
 ```
 
 ---
@@ -264,76 +280,86 @@ open-research/
 ├── .env                        # Environment configuration
 ├── .env.example                # Configuration template
 ├── start.sh                    # Automation script
+│
 ├── ollama/                     # Ollama service (auto-download)
 │   ├── Dockerfile
 │   └── entrypoint.sh
-├── backend/                    # FastAPI backend (Phase 3 ✅)
+│
+├── backend/                    # FastAPI Backend (Phase 3-4 ✅)
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── routes.py       # HTTP endpoints (all test routes)
+│   │   │   └── routes.py       # HTTP endpoints + SSE
 │   │   ├── core/
 │   │   │   ├── config.py       # Pydantic Settings
-│   │   │   ├── ollama_adapter.py   # VLLM singleton (Singleton pattern)
-│   │   │   ├── checkpointer.py     # LangGraph persistence (SQLite)
-│   │   │   └── graph.py            # LangGraph workflow (5 agents)
-│   │   ├── agents/             # All 5 LangGraph agents
-│   │   │   ├── prompts/        # Agent prompts as .md files
-│   │   │   │   ├── planner.md      # Planner system prompt
-│   │   │   │   ├── finder.md       # Source finder prompt
-│   │   │   │   ├── summarizer.md   # Summarizer prompt
-│   │   │   │   ├── reviewer.md     # Reviewer prompt
-│   │   │   │   └── writer.md       # Writer prompt
-│   │   │   ├── planner.py      # Agent 1: Query decomposition
-│   │   │   ├── finder.py       # Agent 2: Source discovery
-│   │   │   ├── summarizer.py   # Agent 3: Content compression
-│   │   │   ├── reviewer.py     # Agent 4: Gap detection
-│   │   │   └── writer.py       # Agent 5: Report synthesis
+│   │   │   ├── ollama_adapter.py   # VLLM singleton
+│   │   │   ├── checkpointer.py     # SQLite persistence
+│   │   │   ├── graph.py            # LangGraph workflow
+│   │   │   └── research_manager.py # Session management
+│   │   ├── agents/             # 5 LangGraph agents
+│   │   │   ├── prompts/        # System prompts (.md)
+│   │   │   ├── planner.py      # Query decomposition
+│   │   │   ├── finder.py       # Source discovery
+│   │   │   ├── summarizer.py   # Content compression
+│   │   │   ├── reviewer.py     # Gap detection
+│   │   │   └── writer.py       # Report synthesis
 │   │   └── models/
 │   │       └── state.py        # ResearchState TypedDict
 │   ├── docs/
 │   │   └── index.html          # Bootstrap documentation
-│   ├── main.py                 # Application entry
+│   ├── main.py                 # FastAPI entry
 │   └── pyproject.toml          # Dependencies (uv)
-├── frontend/                   # React dashboard (Phase 5 ⏳)
+│
+├── frontend/                   # React Frontend (Phase 5 ✅)
 │   ├── src/
+│   │   ├── components/         # React components
+│   │   │   ├── ui/             # Atomic UI (Button, Card, Badge, Input)
+│   │   │   ├── ResearchInput.tsx
+│   │   │   ├── AgentStatus.tsx
+│   │   │   ├── ProgressTracker.tsx
+│   │   │   ├── TraceLog.tsx
+│   │   │   └── StopButton.tsx
+│   │   ├── hooks/              # Custom hooks
+│   │   │   ├── useAgentStream.ts   # SSE streaming
+│   │   │   └── useResearch.ts      # API operations
+│   │   ├── stores/
+│   │   │   └── researchStore.ts    # Zustand state
+│   │   ├── pages/
+│   │   │   └── MissionControl.tsx  # Main dashboard
+│   │   ├── types/
+│   │   │   └── index.ts            # TypeScript types
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css           # Tailwind + custom styles
 │   ├── index.html
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
-└── agent/                      # Project tracking (not in git)
+│
+└── agent/                      # Project tracking
     ├── PLAN.md                 # Execution roadmap
     ├── MEMORY.md               # Technical decisions
-    ├── logs.md                 # Session logs
-    └── error.md                # Error tracking
+    ├── logs.md
+    └── error.md
 ```
 
-### Backend Architecture
+### Frontend Architecture
 
-**Design Patterns Used:**
-- **Singleton:** `VLLMAdapter`, `ResearchGraph`, all Agent instances
-- **Adapter:** Ollama adapter hides LLM complexity
-- **Factory:** Graph compilation, state creation
-- **Capsule:** Each agent is isolated with single responsibility
+**Atomic Design Principles:**
+- **Atoms:** Button, Card, Badge, Input (pure UI)
+- **Molecules:** ResearchInput, StopButton (composed atoms)
+- **Organisms:** AgentStatus, ProgressTracker, TraceLog (complex components)
+- **Pages:** MissionControl (full layout)
 
-**Key Files:**
-- `app/core/ollama_adapter.py` - VLLM singleton with retry logic
-- `app/core/graph.py` - Complete 5-agent LangGraph workflow
-- `app/core/checkpointer.py` - SQLite persistence for state
-- `app/agents/*.py` - Individual agent implementations
-- `app/agents/prompts/*.md` - Externalized system prompts
+**State Management:**
+- **Zustand:** Global state in `stores/researchStore.ts`
+- **Custom Hooks:** Business logic separated from UI
+  - `useAgentStream.ts` - SSE connection handling
+  - `useResearch.ts` - API calls
 
----
-
-## Alternative: Using the Launch Script
-
-```bash
-# Make executable and run
-chmod +x start.sh
-./start.sh up        # Start everything
-./start.sh status    # Check status
-./start.sh logs      # View logs
-./start.sh down      # Stop everything
-```
+**Styling:**
+- **Tailwind CSS:** Utility-first styling
+- **Framer Motion:** Animations and transitions
+- **Lucide React:** Consistent iconography
 
 ---
 
@@ -341,9 +367,6 @@ chmod +x start.sh
 
 ### Port 11434 Already in Use
 
-**Error:** `failed to bind host port 0.0.0.0:11434/tcp: address already in use`
-
-**Solution:** Stop local Ollama:
 ```bash
 sudo systemctl stop ollama
 # or
@@ -352,69 +375,61 @@ pkill ollama
 
 ### ROCm GPU Not Detected
 
-**Error:** Ollama runs on CPU instead of GPU (`library=cpu`)
-
-**Solution for Standard AMD GPUs:**
+**For Strix Halo (RDNA 3.5 / gfx1151):**
 ```bash
-# Verify GPU is visible
-rocm-smi
-
-# Check render group ID
-cat /etc/group | grep render
-
-# Edit .env with your group IDs
-VIDEO_GID=44
-RENDER_GID=991
-```
-
-**Solution for Strix Halo (RDNA 3.5 / gfx1151):**
-The docker-compose.yml already includes required settings:
-- `privileged: true` - Required for GPU access
-- `HSA_OVERRIDE_GFX_VERSION=11.5.1` - Strix Halo architecture
-- `ipc: host` and `seccomp:unconfined` - Shared memory
-
-Verify GPU detection:
-```bash
+# Verify GPU detection
 docker logs deepresearch-ollama | grep "inference compute"
 # Should show: library=ROCm compute=gfx1151
+
+# Check GPU is visible
+rocm-smi
 ```
 
 ### Model Auto-Download
 
-The Ollama container now **auto-downloads** the model on first start. To monitor:
 ```bash
+# Monitor download progress
 docker logs -f deepresearch-ollama
 # Wait for: "✓ Model is ready to use!"
 ```
 
-Or check if model is ready:
+### Frontend Not Loading
+
 ```bash
-curl http://localhost:11434/api/tags | grep gpt-oss
+# Check frontend logs
+docker logs deepresearch-frontend
+
+# Rebuild frontend
+docker compose build frontend
+docker compose up -d frontend
 ```
 
 ---
 
 ## Development Status
 
-**Current Phase:** Phase 4 - Streaming & Interruption (SSE) 🔄
+**Current Phase:** Phase 5 Complete - Frontend Dashboard ✅
 
-**Latest Updates:**
-- ✅ Phase 0: Infrastructure, Docker, GPU support (Strix Halo)
-- ✅ Phase 1: Backend core (config, adapter, state, checkpointer)
-- ✅ Phase 2: Planner Agent + LangGraph setup
-- ✅ Phase 3: All 5 Agents + Full Graph Assembly
-  - Planner: Query decomposition
-  - Finder: DuckDuckGo search, domain diversity
-  - Summarizer: 10:1 compression, key facts
-  - Reviewer: Gap detection, iteration triggers
-  - Writer: Report synthesis with citations
-- ✅ Full Graph: Complete pipeline with conditional routing
-- ✅ Streaming: SSE endpoints for real-time progress
-- ✅ Interruption: Stop/resume functionality
-- ✅ All Libraries Up-to-Date (verified Feb 2026)
-- 🔄 Phase 5 Next: Frontend Dashboard (Mission Control)
+**Completed Features:**
+- ✅ **Infrastructure:** Docker, GPU support (Strix Halo), auto-download
+- ✅ **Backend Core:** FastAPI, config, Ollama adapter, SQLite checkpointer
+- ✅ **5 AI Agents:** Planner, Finder, Summarizer, Reviewer, Writer
+- ✅ **LangGraph:** Full pipeline with conditional iteration loops
+- ✅ **Streaming:** SSE endpoints for real-time progress
+- ✅ **Interruption:** Stop/resume functionality
+- ✅ **Mission Control Dashboard:** React + Vite + Tailwind + Framer Motion
+  - Real-time agent visualization
+  - Progress tracking
+  - Event log streaming
+  - Responsive design
 
-See `/agent/PLAN.md` for detailed execution roadmap.
+**Phase 6 Next:** Integration & Polish
+- Session persistence in UI
+- Report viewer with markdown rendering
+- Source matrix visualization
+- Export functionality (PDF, Markdown)
+
+---
 
 ## License
 

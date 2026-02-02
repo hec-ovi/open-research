@@ -1,0 +1,103 @@
+/**
+ * Type definitions for the Deep Research System frontend
+ */
+
+export interface ResearchState {
+  query: string;
+  plan: SubQuestion[];
+  sources: Source[];
+  findings: Finding[];
+  gaps: GapReport | null;
+  finalReport: Report | null;
+  iteration: number;
+  status: 'idle' | 'running' | 'completed' | 'error' | 'stopped';
+  error: string | null;
+  sessionId: string | null;
+}
+
+export interface SubQuestion {
+  id: string;
+  question: string;
+  status: 'pending' | 'researching' | 'completed' | 'failed';
+  sources?: Source[];
+  findings?: string;
+}
+
+export interface Source {
+  id: string;
+  url: string;
+  title: string;
+  domain: string;
+  reliability: 'high' | 'medium' | 'low';
+  confidence: number;
+  subQuestionId?: string;
+}
+
+export interface Finding {
+  subQuestionId: string;
+  summary: string;
+  keyFacts: string[];
+  sourceInfo: {
+    url: string;
+    title: string;
+    reliability: string;
+  };
+  relevanceScore: number;
+  compressionRatio: number;
+}
+
+export interface GapReport {
+  hasGaps: boolean;
+  gaps: Gap[];
+  recommendations: string[];
+  confidence: number;
+}
+
+export interface Gap {
+  type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  affectedQuestions: string[];
+}
+
+export interface Report {
+  title: string;
+  executiveSummary: string;
+  sections: ReportSection[];
+  sourcesUsed: Source[];
+  confidenceAssessment: string;
+  wordCount: number;
+}
+
+export interface ReportSection {
+  heading: string;
+  content: string;
+}
+
+export interface TraceEvent {
+  type: string;
+  sessionId: string;
+  timestamp: string;
+  node?: string;
+  event?: string;
+  details?: Record<string, unknown>;
+  title?: string;
+  wordCount?: number;
+  iterations?: number;
+  error?: string;
+}
+
+export interface AgentStatus {
+  name: string;
+  status: 'idle' | 'running' | 'completed' | 'error';
+  color: string;
+  description: string;
+}
+
+export const AGENTS: AgentStatus[] = [
+  { name: 'Planner', status: 'idle', color: '#3b82f6', description: 'Decomposes query into sub-questions' },
+  { name: 'Finder', status: 'idle', color: '#10b981', description: 'Discovers diverse sources' },
+  { name: 'Summarizer', status: 'idle', color: '#f59e0b', description: 'Compresses content 10:1' },
+  { name: 'Reviewer', status: 'idle', color: '#8b5cf6', description: 'Detects gaps & triggers iteration' },
+  { name: 'Writer', status: 'idle', color: '#ec4899', description: 'Synthesizes final report' },
+];
