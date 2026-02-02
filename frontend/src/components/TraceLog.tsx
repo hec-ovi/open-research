@@ -14,33 +14,41 @@ import {
   PenTool, 
   AlertCircle,
   XCircle,
-  Heart
+  Brain
 } from 'lucide-react';
 import type { TraceEvent } from '../types';
 
 const eventIcons: Record<string, React.ElementType> = {
   research_started: Play,
+  planner_running: Brain,
   planner_complete: Search,
+  finder_running: Search,
   finder_complete: FileText,
-  summarizer_complete: FileText,
+  summarizer_running: FileText,
+  summarizer_complete: CheckCircle,
+  reviewer_running: CheckCircle,
   reviewer_complete: CheckCircle,
+  writer_running: PenTool,
   research_completed: PenTool,
   research_error: AlertCircle,
   research_stopped: XCircle,
-  heartbeat: Heart,
   connected: Play,
 };
 
 const eventColors: Record<string, string> = {
   research_started: 'text-blue-400',
+  planner_running: 'text-blue-400',
   planner_complete: 'text-blue-400',
+  finder_running: 'text-emerald-400',
   finder_complete: 'text-emerald-400',
+  summarizer_running: 'text-amber-400',
   summarizer_complete: 'text-amber-400',
+  reviewer_running: 'text-violet-400',
   reviewer_complete: 'text-violet-400',
+  writer_running: 'text-pink-400',
   research_completed: 'text-pink-400',
   research_error: 'text-red-400',
   research_stopped: 'text-amber-400',
-  heartbeat: 'text-slate-500',
   connected: 'text-emerald-400',
 };
 
@@ -78,6 +86,10 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
             {event.type.replace(/_/g, ' ')}
           </span>
         </div>
+        {/* Display agent activity message */}
+        {event.message && (
+          <p className="text-sm text-slate-300 mt-1">{event.message}</p>
+        )}
         {event.details && Object.keys(event.details).length > 0 && (
           <p className="text-xs text-slate-500 mt-0.5 truncate">
             {JSON.stringify(event.details)}
@@ -95,6 +107,9 @@ export function TraceLog() {
   const { events, status } = useResearchStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Filter out heartbeat events
+  const displayEvents = events.filter(e => e.type !== 'heartbeat');
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -102,7 +117,7 @@ export function TraceLog() {
     }
   }, [events]);
 
-  if (status === 'idle' && events.length === 0) {
+  if (status === 'idle' && displayEvents.length === 0) {
     return null;
   }
 
@@ -112,7 +127,7 @@ export function TraceLog() {
         <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
           Event Log
         </h3>
-        <span className="text-xs text-slate-500">{events.length} events</span>
+        <span className="text-xs text-slate-500">{displayEvents.length} events</span>
       </div>
       
       <div 
@@ -120,12 +135,12 @@ export function TraceLog() {
         className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px] space-y-1 pr-2"
       >
         <AnimatePresence mode="popLayout">
-          {events.length === 0 ? (
+          {displayEvents.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               Waiting for events...
             </div>
           ) : (
-            events.map((event, index) => (
+            displayEvents.map((event, index) => (
               <EventItem key={`${event.timestamp}-${index}`} event={event} index={index} />
             ))
           )}

@@ -4,47 +4,47 @@
  * The central command interface for the Deep Research System.
  * Assembles all components into a cohesive dashboard layout.
  */
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Header } from '../components/Header';
 import { ResearchInput } from '../components/ResearchInput';
 import { AgentStatus } from '../components/AgentStatus';
 import { ProgressTracker } from '../components/ProgressTracker';
 import { TraceLog } from '../components/TraceLog';
-import { StopButton } from '../components/StopButton';
 import { ReportViewer } from '../components/ReportViewer';
 import { SessionList } from '../components/SessionList';
 import { Card } from '../components/ui/Card';
 import { useResearchStore } from '../stores/researchStore';
-import { Activity, Terminal, Cpu, Zap } from 'lucide-react';
+import { Terminal, Cpu } from 'lucide-react';
 
 export function MissionControl() {
   const { status, finalReport } = useResearchStore();
+  const [isConnected, setIsConnected] = useState(true);
   const isRunning = status === 'running';
   const isCompleted = status === 'completed';
 
+  // Monitor connection status
+  useEffect(() => {
+    const checkConnection = () => {
+      // Check if we can reach the backend
+      fetch('/api/health', { method: 'HEAD' })
+        .then(() => setIsConnected(true))
+        .catch(() => setIsConnected(false));
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Header */}
-      <header className="border-b border-slate-800/50 bg-[#0a0a0f]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-white">Deep Research</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-              v0.1.0
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-sm text-slate-500">
-              <Zap className="w-4 h-4 text-amber-400" />
-              <span>Powered by LangGraph + Ollama</span>
-            </div>
-            <StopButton />
-          </div>
-        </div>
-      </header>
+      {/* Header with heartbeat indicator */}
+      <Header 
+        isConnected={isConnected}
+        systemStatus="LangGraph + Ollama"
+        statusColor="green"
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -133,10 +133,12 @@ export function MissionControl() {
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-500">
-              <Activity className="w-5 h-5" />
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
               <div>
-                <p className="font-medium text-slate-400">Status</p>
-                <p className="text-emerald-400">Operational</p>
+                <p className="font-medium text-slate-400">Connection</p>
+                <p className={isConnected ? 'text-emerald-400' : 'text-red-400'}>
+                  {isConnected ? 'Connected' : 'Disconnected'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-500">

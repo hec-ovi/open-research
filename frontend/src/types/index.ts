@@ -80,6 +80,7 @@ export interface TraceEvent {
   timestamp: string;
   node?: string;
   event?: string;
+  message?: string;  // Human-readable activity description
   details?: Record<string, unknown>;
   title?: string;
   wordCount?: number;

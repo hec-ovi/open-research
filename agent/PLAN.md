@@ -298,6 +298,41 @@ planner → finder → summarizer → reviewer → [conditional] → writer → 
 
 ---
 
+## User Feedback Adaptations ✅ COMPLETE
+
+Based on user testing feedback, the following improvements have been implemented:
+
+### Adaptation 1: Remove Heartbeat Spam from Event Log ✅
+- [x] Filter out `heartbeat` events in TraceLog component
+- [x] Heartbeat events still received but not displayed
+- [x] Event log shows only meaningful events
+
+### Adaptation 2: Header Component with Heartbeat Indicator ✅
+- [x] Created `components/Header.tsx` - Isolated header component with atomic design
+- [x] Moved header logic from MissionControl.tsx
+- [x] Added green pulse indicator when connection is healthy
+- [x] Shows connection status (Connected/Disconnected)
+- [x] Includes: Logo, version, system status, heartbeat indicator
+
+### Adaptation 3: Agent Activity Messages in Events ✅
+- [x] Updated backend to send descriptive messages with each event:
+  - `planner_running`: "Analyzing query and generating research plan..."
+  - `finder_running`: "Searching DuckDuckGo for diverse sources across domains..."
+  - `summarizer_running`: "Extracting key facts and compressing content 10:1 ratio..."
+  - `reviewer_running`: "Analyzing findings for coverage gaps and depth issues..."
+  - `writer_running`: "Synthesizing findings into professional report with citations..."
+- [x] Added `message` field to SSE events
+- [x] Frontend displays these messages in event log
+- [x] Added new event types: planner_running, finder_running, etc.
+
+### Adaptation 4: MissionControl Integration ✅
+- [x] Refactored MissionControl.tsx to use new Header component
+- [x] Cleaned up inline header code (no more "div soup")
+- [x] Pass heartbeat status as prop to Header
+- [x] Added connection monitoring with health checks every 10s
+
+---
+
 ## 🎉 PROJECT COMPLETE
 
 ### All Phases Delivered

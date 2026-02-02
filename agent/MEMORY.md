@@ -466,3 +466,44 @@ Ready for Phase 2: The First Agent (Planner)
   - README now displays the diagram properly
   - Images stored in docs/diagrams/ folder
 
+
+---
+
+### Refactor - User Feedback Adaptations (Real-time Improvements)
+- **Context:** User testing revealed: heartbeat spam in event log, no activity messages, header was "div soup"
+- **Action:**
+  1. **Removed heartbeat spam:**
+     - Updated TraceLog.tsx to filter out heartbeat events
+     - Event log now shows only meaningful events
+     - Added new event icons (Brain for planner, etc.)
+  
+  2. **Created isolated Header component:**
+     - Created `frontend/src/components/Header.tsx` following atomic design
+     - Components: HeartbeatIndicator, Logo, SystemInfo
+     - Props: isConnected, systemStatus, statusColor
+     - Green pulsing dot when connected, red when disconnected
+     - No more nested div soup in MissionControl
+  
+  3. **Added agent activity messages:**
+     - Updated `backend/app/core/graph.py` to emit events with messages
+     - Added `_emit_event()` helper method to ResearchGraph class
+     - Each node emits `*_running` and `*_complete` events with descriptive messages
+     - Messages include specific details (e.g., "Found X sources from Y domains")
+     - Updated `ResearchManager` to pass event_emitter callback to graph
+  
+  4. **Updated frontend for new events:**
+     - Added `message` field to TraceEvent type
+     - Updated TraceLog to display event messages
+     - Added new event type handlers in useAgentStream.ts
+     - Added setAgentCompleted to handle agent completion state
+  
+  5. **MissionControl refactoring:**
+     - Now imports and uses new Header component
+     - Monitors connection status with periodic health checks
+     - Cleaner layout without inline header code
+- **Result:** Much better UX with clear agent activity messages and clean component architecture
+  - Users can see exactly what each agent is doing
+  - No more heartbeat spam cluttering the event log
+  - Header is now a reusable, testable component
+  - Connection status visible at all times
+

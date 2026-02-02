@@ -111,19 +111,22 @@ class ResearchManager:
             query: The research query
         """
         try:
-            graph = get_research_graph(max_iterations=3)
+            # Create event emitter callback for graph nodes
+            async def emit_from_graph(event):
+                await self._emit_event(session, event)
+            
+            graph = get_research_graph(max_iterations=3, event_emitter=emit_from_graph)
             
             # Emit start event
             await self._emit_event(session, {
                 "type": "research_started",
+                "message": f"Starting research on: {query[:80]}{'...' if len(query) > 80 else ''}",
                 "session_id": session.session_id,
                 "query": query,
                 "timestamp": datetime.utcnow().isoformat(),
             })
             
             # Run graph with event streaming
-            # Note: For now, we run the graph and emit completion events
-            # In the future, we can hook into LangGraph's streaming API
             result = await graph.run(
                 query=query,
                 session_id=session.session_id,

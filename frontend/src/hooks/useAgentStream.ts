@@ -21,6 +21,7 @@ export function useAgentStream(): UseAgentStreamReturn {
   const { 
     addEvent, 
     setAgentRunning, 
+    setAgentCompleted,
     completeResearch, 
     stopResearch, 
     setError,
@@ -65,25 +66,53 @@ export function useAgentStream(): UseAgentStreamReturn {
             setAgentRunning('Planner');
             setProgress(10);
             break;
+          
+          case 'planner_running':
+            setAgentRunning('Planner');
+            break;
             
           case 'planner_complete':
+            setAgentCompleted('Planner');
             setAgentRunning('Finder');
             setProgress(25);
             break;
+          
+          case 'finder_running':
+            setAgentRunning('Finder');
+            break;
             
           case 'finder_complete':
+            setAgentCompleted('Finder');
             setAgentRunning('Summarizer');
             setProgress(50);
             break;
+          
+          case 'summarizer_running':
+            setAgentRunning('Summarizer');
+            break;
             
           case 'summarizer_complete':
+            setAgentCompleted('Summarizer');
             setAgentRunning('Reviewer');
             setProgress(70);
             break;
+          
+          case 'reviewer_running':
+            setAgentRunning('Reviewer');
+            break;
             
           case 'reviewer_complete':
+            setAgentCompleted('Reviewer');
             setAgentRunning('Writer');
             setProgress(85);
+            break;
+          
+          case 'writer_running':
+            setAgentRunning('Writer');
+            break;
+            
+          case 'writer_complete':
+            setAgentCompleted('Writer');
             break;
             
           case 'research_completed':
@@ -103,7 +132,7 @@ export function useAgentStream(): UseAgentStreamReturn {
             break;
             
           case 'heartbeat':
-            // Keep-alive, no action needed
+            // Keep-alive, no action needed - filtered in TraceLog
             break;
         }
       } catch (err) {

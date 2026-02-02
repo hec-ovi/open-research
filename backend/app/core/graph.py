@@ -55,6 +55,7 @@ class ResearchGraph:
         builder: StateGraph builder instance
         checkpointer: SQLite checkpointer for persistence
         max_iterations: Maximum research iterations (safeguard)
+        event_emitter: Optional callback to emit events during execution
     
     Example:
         >>> graph = ResearchGraph()
@@ -62,16 +63,18 @@ class ResearchGraph:
         >>> print(result.get("final_report", {}).get("title"))
     """
     
-    def __init__(self, max_iterations: int = 3):
+    def __init__(self, max_iterations: int = 3, event_emitter=None):
         """
         Initialize the research graph builder.
         
         Args:
             max_iterations: Maximum number of research iterations (default: 3)
+            event_emitter: Optional async callback to emit events during execution
         """
         self.builder = StateGraph(ResearchState)
         self.checkpointer = get_checkpointer()
         self.max_iterations = max_iterations
+        self.event_emitter = event_emitter
         
         # Build the graph structure
         self._build_graph()
@@ -114,6 +117,18 @@ class ResearchGraph:
         # Writer always ends
         self.builder.add_edge("writer", END)
     
+    async def _emit_event(self, event_type: str, message: str, session_id: str, **extra):
+        """Emit an event if event_emitter is configured."""
+        if self.event_emitter:
+            from datetime import datetime
+            await self.event_emitter({
+                "type": event_type,
+                "message": message,
+                "session_id": session_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                **extra
+            })
+    
     async def _planner_node(self, state: ResearchState) -> ResearchState:
         """
         Planner node - Decomposes query into sub-questions.
@@ -127,7 +142,15 @@ class ResearchGraph:
         Returns:
             ResearchState: Updated state with research plan
         """
+        session_id = state.get("session_id", "unknown")
         logger.info("[Graph] Running Planner node")
+        
+        # Emit running event
+        await self._emit_event(
+            "planner_running",
+            f"Analyzing query and generating research plan...",
+            session_id
+        )
         
         planner = get_planner()
         
@@ -141,11 +164,24 @@ class ResearchGraph:
             recommendations = " ".join(gaps["recommendations"][:3])
             query = f"{state['query']} (Additional focus: {recommendations})"
             logger.info(f"[Graph] Iteration {iteration}: Refining query with gap recommendations")
+            await self._emit_event(
+                "planner_running",
+                f"Iteration {iteration}: Refining research based on gaps...",
+                session_id
+            )
         else:
             query = state["query"]
         
         result = await planner.plan(query)
         state["plan"] = result["plan"]
+        
+        sub_questions = [sq.get("question", "") for sq in result["plan"]]
+        await self._emit_event(
+            "planner_complete",
+            f"Generated {len(result['plan'])} sub-questions: {', '.join(sub_questions[:3])}{'...' if len(sub_questions) > 3 else ''}",
+            session_id,
+            sub_questions_count=len(result["plan"])
+        )
         
         logger.info(f"[Graph] Planner generated {len(result['plan'])} sub-questions")
         return state
@@ -160,7 +196,14 @@ class ResearchGraph:
         Returns:
             ResearchState: Updated state with discovered sources
         """
+        session_id = state.get("session_id", "unknown")
         logger.info("[Graph] Running Finder node")
+        
+        await self._emit_event(
+            "finder_running",
+            "Searching DuckDuckGo for diverse sources across domains...",
+            session_id
+        )
         
         finder = get_finder()
         plan = state.get("plan", [])
@@ -181,13 +224,26 @@ class ResearchGraph:
         # Deduplicate sources by URL
         seen_urls = set()
         unique_sources = []
+        domains = set()
         for source in all_sources:
             url = source.get("url", "")
+            domain = source.get("domain", "")
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_sources.append(source)
+                if domain:
+                    domains.add(domain)
         
         state["sources"] = unique_sources
+        
+        await self._emit_event(
+            "finder_complete",
+            f"Discovered {len(unique_sources)} unique sources from {len(domains)} different domains",
+            session_id,
+            sources_count=len(unique_sources),
+            domains_count=len(domains)
+        )
+        
         logger.info(f"[Graph] Finder complete: {len(unique_sources)} unique sources")
         return state
     
@@ -204,12 +260,20 @@ class ResearchGraph:
         Returns:
             ResearchState: Updated state with findings
         """
+        session_id = state.get("session_id", "unknown")
         logger.info("[Graph] Running Summarizer node")
+        
+        await self._emit_event(
+            "summarizer_running",
+            "Extracting key facts and compressing content 10:1 ratio...",
+            session_id
+        )
         
         summarizer = get_summarizer()
         sources = state.get("sources", [])
         plan = state.get("plan", [])
         findings = []
+        total_key_facts = 0
         
         # Create a map of sub-question IDs to questions
         sq_map = {sq.get("id"): sq.get("question", "") for sq in plan}
@@ -240,6 +304,10 @@ class ResearchGraph:
                 finding["sub_question_id"] = sq_id
                 findings.append(finding)
                 
+                # Count key facts
+                key_facts = finding.get("key_facts", [])
+                total_key_facts += len(key_facts)
+                
             except Exception as e:
                 logger.warning(f"[Graph] Failed to summarize {source.get('url', 'unknown')}: {e}")
                 continue
@@ -247,6 +315,14 @@ class ResearchGraph:
         # Merge with existing findings (from previous iterations)
         existing_findings = state.get("findings", [])
         state["findings"] = existing_findings + findings
+        
+        await self._emit_event(
+            "summarizer_complete",
+            f"Extracted {total_key_facts} key facts from {len(findings)} sources (10:1 compression)",
+            session_id,
+            findings_count=len(findings),
+            key_facts_count=total_key_facts
+        )
         
         logger.info(f"[Graph] Summarizer complete: {len(findings)} new findings")
         return state
@@ -261,7 +337,14 @@ class ResearchGraph:
         Returns:
             ResearchState: Updated state with gap report
         """
+        session_id = state.get("session_id", "unknown")
         logger.info("[Graph] Running Reviewer node")
+        
+        await self._emit_event(
+            "reviewer_running",
+            "Analyzing findings for coverage gaps and depth issues...",
+            session_id
+        )
         
         reviewer = get_reviewer()
         plan = state.get("plan", [])
@@ -277,6 +360,27 @@ class ResearchGraph:
         
         gap_report = result.get("gap_report", {})
         state["gaps"] = gap_report
+        
+        gaps_count = len(gap_report.get("gaps", []))
+        has_gaps = gap_report.get("has_gaps", False)
+        confidence = gap_report.get("confidence", 0)
+        
+        if has_gaps and iteration < self.max_iterations:
+            await self._emit_event(
+                "reviewer_complete",
+                f"Found {gaps_count} gaps (confidence: {confidence:.0%}). Starting iteration {iteration + 1}...",
+                session_id,
+                gaps_found=gaps_count,
+                next_action="iterate"
+            )
+        else:
+            await self._emit_event(
+                "reviewer_complete",
+                f"Review complete. {gaps_count} gaps found, confidence: {confidence:.0%}. Proceeding to write report...",
+                session_id,
+                gaps_found=gaps_count,
+                next_action="finish"
+            )
         
         logger.info(
             f"[Graph] Reviewer complete: has_gaps={gap_report.get('has_gaps')}, "
@@ -294,13 +398,31 @@ class ResearchGraph:
         Returns:
             ResearchState: Updated state with final report
         """
+        session_id = state.get("session_id", "unknown")
         logger.info("[Graph] Running Writer node")
+        
+        await self._emit_event(
+            "writer_running",
+            "Synthesizing findings into professional report with citations...",
+            session_id
+        )
         
         writer = get_writer()
         report = await writer.write_report(state)
         
         state["final_report"] = report
         state["status"] = "completed"
+        
+        word_count = report.get("word_count", 0)
+        sources_count = len(report.get("sources_used", []))
+        
+        await self._emit_event(
+            "writer_complete",
+            f"Report complete: {word_count} words, {sources_count} sources cited",
+            session_id,
+            word_count=word_count,
+            sources_cited=sources_count
+        )
         
         logger.info(f"[Graph] Writer complete: {report.get('title', 'Untitled')}")
         return state
@@ -392,12 +514,13 @@ class ResearchGraph:
 _graph_instance: ResearchGraph | None = None
 
 
-def get_research_graph(max_iterations: int = 3) -> ResearchGraph:
+def get_research_graph(max_iterations: int = 3, event_emitter=None) -> ResearchGraph:
     """
     Get the singleton ResearchGraph instance.
     
     Args:
         max_iterations: Maximum research iterations (default: 3)
+        event_emitter: Optional async callback to emit events during execution
     
     Returns:
         ResearchGraph: Singleton graph instance
@@ -408,5 +531,8 @@ def get_research_graph(max_iterations: int = 3) -> ResearchGraph:
     """
     global _graph_instance
     if _graph_instance is None:
-        _graph_instance = ResearchGraph(max_iterations=max_iterations)
+        _graph_instance = ResearchGraph(max_iterations=max_iterations, event_emitter=event_emitter)
+    elif event_emitter:
+        # Update event emitter if provided
+        _graph_instance.event_emitter = event_emitter
     return _graph_instance
