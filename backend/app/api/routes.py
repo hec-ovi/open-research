@@ -8,6 +8,8 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from pathlib import Path
 
+from app.core.config import settings
+
 # Create router for API endpoints
 router = APIRouter()
 
@@ -25,6 +27,10 @@ async def health_check() -> dict:
         "version": "0.1.0",
         "services": {
             "api": "online",
+        },
+        "config": {
+            "ollama_model": settings.OLLAMA_MODEL,
+            "max_iterations": settings.MAX_ITERATIONS,
         },
     }
 
