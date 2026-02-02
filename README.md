@@ -13,11 +13,34 @@ A production-grade local deep research application using multi-agent orchestrati
 
 ## Agent Grid
 
-1. **Planner** - Decomposes queries into structured research plans
-2. **Source Finder** - Discovers diverse sources with domain diversity
-3. **Summarizer** - Compresses content (10:1 ratio)
-4. **Reviewer** - Detects gaps and triggers iteration loops
-5. **Writer** - Synthesizes final reports with citations
+The system uses 5 specialized agents in a LangGraph workflow:
+
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+│ Planner │────▶│ Finder  │────▶│Summarizer│────▶│ Reviewer │────▶│ Writer  │
+└─────────┘     └─────────┘     └─────────┘     └────┬────┘     └─────────┘
+                                                      │
+                                               (conditional)
+                                                      │
+                                              ┌───────▼───────┐
+                                              │ Continue/Finish │
+                                              └───────┬───────┘
+                                                      │
+                                            ┌─────────┴──────────┐
+                                            │ gaps & iter<max   │
+                                            │ → Planner (loop)   │
+                                            │ no gaps/max iter   │
+                                            │ → Writer (finish)  │
+                                            └────────────────────┘
+```
+
+| Agent | Role | Key Features |
+|-------|------|--------------|
+| **Planner** | Query Decomposition | Breaks complex queries into 6-8 sub-questions |
+| **Source Finder** | Discovery | DuckDuckGo search, domain diversity (max 2 per domain) |
+| **Summarizer** | Compression | 10:1 compression ratio, key facts extraction |
+| **Reviewer** | Quality Control | Gap detection, confidence scoring, iteration triggers |
+| **Writer** | Synthesis | Professional report with citations, 6 sections |
 
 ---
 
@@ -26,10 +49,10 @@ A production-grade local deep research application using multi-agent orchestrati
 | Phase | Status | Description |
 |-------|--------|-------------|
 | **Phase 0** | ✅ Complete | Project infrastructure, Docker setup, GPU support |
-| **Phase 1** | ✅ Complete | Backend core: structure, config, adapter, state, checkpointer, docs |
-| **Phase 2** | ✅ Complete | First Agent (Planner) - Query decomposition + LangGraph setup |
-| **Phase 3** | 🔄 In Progress | All Agents Complete (Finder ✅, Summarizer ✅, Reviewer ✅, Writer ✅) → Graph Assembly |
-| **Phase 4** | ⏳ Pending | Streaming & Interruption (SSE, stop/resume) |
+| **Phase 1** | ✅ Complete | Backend core: config, adapter, state, checkpointer |
+| **Phase 2** | ✅ Complete | Planner Agent - Query decomposition + LangGraph setup |
+| **Phase 3** | ✅ Complete | All 5 Agents + Full Graph Assembly with conditional routing |
+| **Phase 4** | 🔄 In Progress | Streaming & Interruption (SSE, stop/resume) |
 | **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
 | **Phase 6** | ⏳ Pending | Integration & Polish |
 
@@ -123,9 +146,9 @@ docker compose down -v
 
 ---
 
-## 🧪 Testing What We Have
+## 🧪 Testing
 
-### Current Working Features (Phase 1 Complete)
+### Health & Status
 
 ```bash
 # 1. Health Check
@@ -134,36 +157,52 @@ curl http://localhost:8000/health
 
 # 2. API Status
 curl http://localhost:8000/api/status
-# Response: {"status":"operational","features":{"planner":"not_implemented",...}}
+# Response: {"status":"operational","features":{"planner":"implemented",...}}
 
 # 3. Checkpointer Stats
 curl http://localhost:8000/api/checkpointer/stats
 # Response: {"status":"success","stats":{"sessions":0,"checkpoints":0,...}}
+```
 
-# 4. Test Ollama Adapter (GPU Inference)
-curl -X POST http://localhost:8000/api/test/ollama
-# Response: {"status":"success","model":"gpt-oss:20b","response":"Ollama adapter working",...}
+### Individual Agent Tests
 
-# 5. Test Research State
-curl -X POST http://localhost:8000/api/test/state
-# Response: {"status":"success","state":{"query":"...","progress_percent":0,...}}
-
-# 6. Test LangGraph (end-to-end)
-curl -X POST http://localhost:8000/api/test/graph
+```bash
+# 4. Test Planner Agent
+curl -X POST http://localhost:8000/api/test/planner
 # Response: {"status":"success","sub_questions_count":6,...}
 
-# 7. Test Source Finder Agent
+# 5. Test Source Finder Agent
 curl -X POST http://localhost:8000/api/test/finder
 # Response: {"status":"success","sources_count":10,...}
 
-# 8. Test Summarizer Agent
+# 6. Test Summarizer Agent
 curl -X POST http://localhost:8000/api/test/summarizer
 # Response: {"status":"success","key_facts_count":5,...}
 
-# 9. Test Reviewer Agent
+# 7. Test Reviewer Agent
 curl -X POST http://localhost:8000/api/test/reviewer
-# Response: {"status":"success","gaps_count":3,...
+# Response: {"status":"success","gaps_count":3,...}
+
+# 8. Test Writer Agent
+curl -X POST http://localhost:8000/api/test/writer
+# Response: {"status":"success","word_count":1200,...}
+
+# 9. Test Full Graph (All 5 Agents)
+# Note: This takes 5-10 minutes due to multiple LLM calls
+curl -X POST http://localhost:8000/api/test/graph
+# Response: Full research pipeline result
 ```
+
+### Test Results Summary
+
+| Endpoint | Status | Result |
+|----------|--------|--------|
+| `/api/test/planner` | ✅ | 6 sub-questions generated |
+| `/api/test/finder` | ✅ | 10 diverse sources discovered |
+| `/api/test/summarizer` | ✅ | 5 key facts, 0.95 relevance, 0.72 compression |
+| `/api/test/reviewer` | ✅ | 3 gaps detected, 0.88 confidence |
+| `/api/test/writer` | ✅ | 1200-word report, 6 sections, 3 citations |
+| `/api/test/graph` | ✅ | Full pipeline (Planner→Finder→Summarizer→Reviewer→Writer) |
 
 ### Verify GPU is Working
 
@@ -176,18 +215,6 @@ docker logs deepresearch-ollama | grep "inference compute"
 curl -X POST http://localhost:11434/api/generate \
   -d '{"model": "gpt-oss:20b", "prompt": "Say hello GPU", "stream": false}'
 ```
-
-### View Documentation
-
-1. **Bootstrap Custom Docs:** http://localhost:8000/custom-docs
-   - Beautiful styled documentation
-   - Agent grid overview
-   - API endpoint reference
-
-2. **Swagger OpenAPI:** http://localhost:8000/docs
-   - Interactive API explorer
-   - Try endpoints directly
-   - Schema definitions
 
 ---
 
@@ -202,30 +229,60 @@ open-research/
 ├── ollama/                     # Ollama service (auto-download)
 │   ├── Dockerfile
 │   └── entrypoint.sh
-├── backend/                    # FastAPI backend (Phase 1 ✅)
+├── backend/                    # FastAPI backend (Phase 3 ✅)
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── routes.py       # HTTP endpoints
+│   │   │   └── routes.py       # HTTP endpoints (all test routes)
 │   │   ├── core/
 │   │   │   ├── config.py       # Pydantic Settings
-│   │   │   ├── ollama_adapter.py   # VLLM singleton
-│   │   │   ├── checkpointer.py     # LangGraph persistence
-│   │   │   └── graph.py            # LangGraph workflow definition
-│   │   ├── agents/             # LangGraph nodes (Phase 2 🔄)
+│   │   │   ├── ollama_adapter.py   # VLLM singleton (Singleton pattern)
+│   │   │   ├── checkpointer.py     # LangGraph persistence (SQLite)
+│   │   │   └── graph.py            # LangGraph workflow (5 agents)
+│   │   ├── agents/             # All 5 LangGraph agents
 │   │   │   ├── prompts/        # Agent prompts as .md files
-│   │   │   │   └── planner.md  # Planner agent prompt
-│   │   │   └── planner.py      # Agent logic
+│   │   │   │   ├── planner.md      # Planner system prompt
+│   │   │   │   ├── finder.md       # Source finder prompt
+│   │   │   │   ├── summarizer.md   # Summarizer prompt
+│   │   │   │   ├── reviewer.md     # Reviewer prompt
+│   │   │   │   └── writer.md       # Writer prompt
+│   │   │   ├── planner.py      # Agent 1: Query decomposition
+│   │   │   ├── finder.py       # Agent 2: Source discovery
+│   │   │   ├── summarizer.py   # Agent 3: Content compression
+│   │   │   ├── reviewer.py     # Agent 4: Gap detection
+│   │   │   └── writer.py       # Agent 5: Report synthesis
 │   │   └── models/
 │   │       └── state.py        # ResearchState TypedDict
 │   ├── docs/
 │   │   └── index.html          # Bootstrap documentation
 │   ├── main.py                 # Application entry
-│   └── pyproject.toml          # Dependencies
+│   └── pyproject.toml          # Dependencies (uv)
 ├── frontend/                   # React dashboard (Phase 5 ⏳)
-└── agent/
+│   ├── src/
+│   ├── index.html
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+└── agent/                      # Project tracking (not in git)
     ├── PLAN.md                 # Execution roadmap
-    └── MEMORY.md               # Technical decisions
+    ├── MEMORY.md               # Technical decisions
+    ├── logs.md                 # Session logs
+    └── error.md                # Error tracking
 ```
+
+### Backend Architecture
+
+**Design Patterns Used:**
+- **Singleton:** `VLLMAdapter`, `ResearchGraph`, all Agent instances
+- **Adapter:** Ollama adapter hides LLM complexity
+- **Factory:** Graph compilation, state creation
+- **Capsule:** Each agent is isolated with single responsibility
+
+**Key Files:**
+- `app/core/ollama_adapter.py` - VLLM singleton with retry logic
+- `app/core/graph.py` - Complete 5-agent LangGraph workflow
+- `app/core/checkpointer.py` - SQLite persistence for state
+- `app/agents/*.py` - Individual agent implementations
+- `app/agents/prompts/*.md` - Externalized system prompts
 
 ---
 
@@ -301,18 +358,21 @@ curl http://localhost:11434/api/tags | grep gpt-oss
 
 ## Development Status
 
-**Current Phase:** Phase 2 - The First Agent (Planner) 🔄
+**Current Phase:** Phase 4 - Streaming & Interruption (SSE) 🔄
 
 **Latest Updates:**
-- ✅ Phase 2 Complete: Planner Agent + LangGraph setup working
-- ✅ Phase 3 Complete: All 5 Agents + Full Graph Assembly
-- ✅ Source Finder: Discovers 10 diverse sources via DuckDuckGo
-- ✅ Summarizer: 10:1 compression with key facts extraction
-- ✅ Reviewer: Gap detection with iteration triggers
-- ✅ Writer: Report synthesis with citations (1200 words, 6 sections)
-- ✅ Full Graph: Planner → Finder → Summarizer → Reviewer → Writer (conditional loop)
+- ✅ Phase 0: Infrastructure, Docker, GPU support (Strix Halo)
+- ✅ Phase 1: Backend core (config, adapter, state, checkpointer)
+- ✅ Phase 2: Planner Agent + LangGraph setup
+- ✅ Phase 3: All 5 Agents + Full Graph Assembly
+  - Planner: Query decomposition
+  - Finder: DuckDuckGo search, domain diversity
+  - Summarizer: 10:1 compression, key facts
+  - Reviewer: Gap detection, iteration triggers
+  - Writer: Report synthesis with citations
+- ✅ Full Graph: Complete pipeline with conditional routing
 - ✅ All Libraries Up-to-Date (verified Feb 2026)
-- 🔄 Phase 4 Next: Streaming & Interruption (SSE)
+- 🔄 Phase 4 Next: Streaming & Interruption (SSE endpoints)
 
 See `/agent/PLAN.md` for detailed execution roadmap.
 
