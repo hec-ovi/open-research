@@ -116,7 +116,7 @@ export function useAgentStream(): UseAgentStreamReturn {
             break;
             
           case 'research_completed':
-            completeResearch();
+            completeResearch(data.final_report);
             setProgress(100);
             disconnect();
             break;
@@ -145,7 +145,7 @@ export function useAgentStream(): UseAgentStreamReturn {
       setIsConnected(false);
       // Don't set error here, let the stream try to reconnect or complete
     };
-  }, [addEvent, setAgentRunning, completeResearch, stopResearch, setError, setProgress, disconnect]);
+  }, [addEvent, setAgentRunning, setAgentCompleted, completeResearch, stopResearch, setError, setProgress, disconnect]);
 
   return {
     isConnected,

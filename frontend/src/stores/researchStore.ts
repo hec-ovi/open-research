@@ -13,7 +13,7 @@ interface ResearchStore extends ResearchState {
   setQuery: (query: string) => void;
   startResearch: (sessionId: string) => void;
   stopResearch: () => void;
-  completeResearch: () => void;
+  completeResearch: (finalReport?: ResearchState['finalReport']) => void;
   setError: (error: string) => void;
   reset: () => void;
   
@@ -59,16 +59,18 @@ export const useResearchStore = create<ResearchStore>((set, get) => ({
     sessionId,
     status: 'running',
     query: get().query,
+    agentStatus: AGENTS.map(a => ({ ...a, status: 'idle' as const })),
   }),
   
   stopResearch: () => set({
     status: 'stopped',
   }),
   
-  completeResearch: () => set({
+  completeResearch: (finalReport?: ResearchState['finalReport']) => set((state) => ({
     status: 'completed',
     progress: 100,
-  }),
+    finalReport: finalReport || state.finalReport,
+  })),
   
   setError: (error) => set({
     status: 'error',
@@ -82,12 +84,19 @@ export const useResearchStore = create<ResearchStore>((set, get) => ({
     progress: 0,
   }),
 
-  setAgentRunning: (agentName) => set((state) => ({
-    agentStatus: state.agentStatus.map(a => 
-      a.name === agentName ? { ...a, status: 'running' as const } : 
-      a.status === 'running' ? { ...a, status: 'completed' as const } : a
-    ),
-  })),
+  setAgentRunning: (agentName) => set((state) => {
+    // Mark the target agent as running, and any currently running agent as completed
+    const updatedAgents = state.agentStatus.map(a => {
+      if (a.name === agentName) {
+        return { ...a, status: 'running' as const };
+      }
+      if (a.status === 'running') {
+        return { ...a, status: 'completed' as const };
+      }
+      return a;
+    });
+    return { agentStatus: updatedAgents };
+  }),
   
   setAgentCompleted: (agentName) => set((state) => ({
     agentStatus: state.agentStatus.map(a => 

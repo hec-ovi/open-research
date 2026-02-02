@@ -145,7 +145,7 @@ class ResearchManager:
                     "timestamp": datetime.utcnow().isoformat(),
                 })
             else:
-                # Emit completion event
+                # Emit completion event with full report
                 final_report = result.get("final_report", {})
                 await self._emit_event(session, {
                     "type": "research_completed",
@@ -153,6 +153,7 @@ class ResearchManager:
                     "title": final_report.get("title", "Untitled"),
                     "word_count": final_report.get("word_count", 0),
                     "iterations": result.get("iteration", 0),
+                    "final_report": final_report,  # Send full report
                     "timestamp": datetime.utcnow().isoformat(),
                 })
             

@@ -86,6 +86,7 @@ export interface TraceEvent {
   wordCount?: number;
   iterations?: number;
   error?: string;
+  final_report?: Report;  // Full report on completion
 }
 
 export interface AgentStatus {
