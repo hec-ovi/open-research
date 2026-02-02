@@ -28,7 +28,7 @@ A production-grade local deep research application using multi-agent orchestrati
 | **Phase 0** | ✅ Complete | Project infrastructure, Docker setup, GPU support |
 | **Phase 1** | ✅ Complete | Backend core: structure, config, adapter, state, checkpointer, docs |
 | **Phase 2** | ✅ Complete | First Agent (Planner) - Query decomposition + LangGraph setup |
-| **Phase 3** | ⏳ Pending | Remaining Agents (Source Finder, Summarizer, Reviewer, Writer) |
+| **Phase 3** | 🔄 In Progress | Remaining Agents (Source Finder ✅, Summarizer, Reviewer, Writer) |
 | **Phase 4** | ⏳ Pending | Streaming & Interruption (SSE, stop/resume) |
 | **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
 | **Phase 6** | ⏳ Pending | Integration & Polish |
@@ -150,7 +150,11 @@ curl -X POST http://localhost:8000/api/test/state
 
 # 6. Test LangGraph (end-to-end)
 curl -X POST http://localhost:8000/api/test/graph
-# Response: {"status":"success","sub_questions_count":6,...}}
+# Response: {"status":"success","sub_questions_count":6,...}
+
+# 7. Test Source Finder Agent
+curl -X POST http://localhost:8000/api/test/finder
+# Response: {"status":"success","sources_count":10,...}}
 ```
 
 ### Verify GPU is Working
@@ -293,9 +297,9 @@ curl http://localhost:11434/api/tags | grep gpt-oss
 
 **Latest Updates:**
 - ✅ Phase 2 Complete: Planner Agent + LangGraph setup working
-- ✅ End-to-end graph execution: Query → Planner → Research Plan
-- ✅ All test endpoints working: /api/test/planner, /api/test/graph
-- 🔄 Phase 3: Remaining Agents (Source Finder, Summarizer, Reviewer, Writer)
+- ✅ Phase 3 Progress: Source Finder Agent complete
+- ✅ Source Finder: Discovers 10 diverse sources via DuckDuckGo
+- 🔄 Phase 3 Next: Summarizer Agent
 
 See `/agent/PLAN.md` for detailed execution roadmap.
 
