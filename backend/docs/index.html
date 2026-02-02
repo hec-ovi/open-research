@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Research API - Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1a1a2e;
+            --card-bg: #16213e;
+        }
+        body {
+            background: var(--dark-bg);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .hero {
+            background: var(--primary-gradient);
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid #2d3748;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+        .endpoint-card {
+            border-left: 4px solid #667eea;
+        }
+        .method-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .method-post { background: #28a745; color: white; }
+        .method-get { background: #17a2b8; color: white; }
+        .agent-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .code-block {
+            background: #0d1117;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+        }
+        .status-badge {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .status-online {
+            background: #28a745;
+            color: white;
+        }
+        .nav-link {
+            color: #a0a0a0;
+            transition: color 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Badge -->
+    <div class="status-badge status-online" id="apiStatus">
+        <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem;"></i>API Online
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="bi bi-brain me-3"></i>Deep Research API
+            </h1>
+            <p class="lead mb-0">Multi-Agent Orchestration with LangGraph & Ollama</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Navigation -->
+        <ul class="nav nav-pills mb-4 justify-content-center">
+            <li class="nav-item">
+                <a class="nav-link active" href="#overview">Overview</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#agents">Agents</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#endpoints">Endpoints</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#schemas">Schemas</a>
+            </li>
+        </ul>
+
+        <!-- Overview Section -->
+        <section id="overview" class="mb-5">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center p-4">
+                        <div class="agent-icon mx-auto mb-3">
+                            <i class="bi bi-diagram-3"></i>
+                        </div>
+                        <h5>Orchestrator Pattern</h5>
+                        <p class="text-muted mb-0">Star topology with specialized sub-agents</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center p-4">
+                        <div class="agent-icon mx-auto mb-3">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h5>Real-time Streaming</h5>
+                        <p class="text-muted mb-0">SSE events for live agent updates</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center p-4">
+                        <div class="agent-icon mx-auto mb-3">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h5>Resilient</h5>
+                        <p class="text-muted mb-0">SQLite checkpointing & interruption</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Agents Section -->
+        <section id="agents" class="mb-5">
+            <h3 class="mb-4"><i class="bi bi-robot me-2"></i>Agent Grid</h3>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">1</span>
+                            <h6 class="mb-0">Planner</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Decomposes queries into structured research plans</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">2</span>
+                            <h6 class="mb-0">Source Finder</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Discovers diverse sources with diversity prioritization</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-info me-2">3</span>
+                            <h6 class="mb-0">Summarizer</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Compresses content with 10:1 ratio</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-warning text-dark me-2">4</span>
+                            <h6 class="mb-0">Reviewer</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Detects gaps and triggers iteration loops</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-secondary me-2">5</span>
+                            <h6 class="mb-0">Writer</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Synthesizes final reports with citations</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Endpoints Section -->
+        <section id="endpoints" class="mb-5">
+            <h3 class="mb-4"><i class="bi bi-plug me-2"></i>API Endpoints</h3>
+            
+            <div class="card endpoint-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="method-badge method-post me-3">POST</span>
+                        <code class="text-light">/research/start</code>
+                    </div>
+                    <p class="text-muted">Initialize a new research session</p>
+                    <div class="code-block mt-3">
+                        <span class="text-success">// Request</span><br>
+                        {<br>
+                        &nbsp;&nbsp;<span class="text-warning">"query"</span>: <span class="text-info">"Impact of AI on healthcare"</span><br>
+                        }<br><br>
+                        <span class="text-success">// Response</span><br>
+                        {<br>
+                        &nbsp;&nbsp;<span class="text-warning">"research_id"</span>: <span class="text-info">"uuid-string"</span>,<br>
+                        &nbsp;&nbsp;<span class="text-warning">"status"</span>: <span class="text-info">"started"</span><br>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card endpoint-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="method-badge method-get me-3">GET</span>
+                        <code class="text-light">/research/{id}/events</code>
+                    </div>
+                    <p class="text-muted">Server-Sent Events stream for real-time updates</p>
+                    <div class="code-block mt-3">
+                        <span class="text-success">// SSE Event Types</span><br>
+                        event: node_start<br>
+                        data: {"node": "planner", "timestamp": "..."}<br><br>
+                        event: thinking<br>
+                        data: {"agent": "planner", "thought": "..."}<br><br>
+                        event: complete<br>
+                        data: {"report": "..."}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card endpoint-card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="method-badge method-post me-3">POST</span>
+                        <code class="text-light">/research/{id}/stop</code>
+                    </div>
+                    <p class="text-muted">Interrupt an active research session</p>
+                </div>
+            </div>
+
+            <div class="card endpoint-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="method-badge method-get me-3">GET</span>
+                        <code class="text-light">/research/{id}/status</code>
+                    </div>
+                    <p class="text-muted">Get current research session status</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Schemas Section -->
+        <section id="schemas" class="mb-5">
+            <h3 class="mb-4"><i class="bi bi-file-code me-2"></i>Schemas</h3>
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-primary">ResearchState (LangGraph State)</h6>
+                    <div class="code-block">
+                        {<br>
+                        &nbsp;&nbsp;<span class="text-warning">"query"</span>: <span class="text-info">string</span>,              <span class="text-muted">// Original user query</span><br>
+                        &nbsp;&nbsp;<span class="text-warning">"plan"</span>: ResearchPlan,           <span class="text-muted">// Generated research plan</span><br>
+                        &nbsp;&nbsp;<span class="text-warning">"findings"</span>: Finding[],          <span class="text-muted">// Accumulated findings</span><br>
+                        &nbsp;&nbsp;<span class="text-warning">"gap_report"</span>: GapReport,        <span class="text-muted">// Reviewer feedback</span><br>
+                        &nbsp;&nbsp;<span class="text-warning">"final_report"</span>: <span class="text-info">string</span>,      <span class="text-muted">// Synthesized output</span><br>
+                        &nbsp;&nbsp;<span class="text-warning">"iterations"</span>: <span class="text-info">number</span>       <span class="text-muted">// Loop counter</span><br>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-muted">
+            <p class="mb-0">Deep Research System &copy; 2026 | Built with FastAPI + LangGraph + Ollama</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple API health check
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const statusEl = document.getElementById('apiStatus');
+                if (response.ok) {
+                    statusEl.className = 'status-badge status-online';
+                    statusEl.innerHTML = '<i class="bi bi-circle-fill me-2" style="font-size: 0.5rem;"></i>API Online';
+                } else {
+                    throw new Error('Health check failed');
+                }
+            } catch (e) {
+                const statusEl = document.getElementById('apiStatus');
+                statusEl.className = 'status-badge bg-danger';
+                statusEl.innerHTML = '<i class="bi bi-circle-fill me-2" style="font-size: 0.5rem;"></i>API Offline';
+            }
+        }
+        checkHealth();
+        setInterval(checkHealth, 30000);
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
