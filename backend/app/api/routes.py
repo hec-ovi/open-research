@@ -16,6 +16,7 @@ from app.agents.planner import get_planner
 from app.agents.finder import get_finder
 from app.agents.summarizer import get_summarizer
 from app.agents.reviewer import get_reviewer
+from app.agents.writer import get_writer
 from app.models.state import ResearchState, create_initial_state, get_progress_percent
 
 # Create router for API endpoints
@@ -59,7 +60,7 @@ async def api_status() -> dict:
             "source_finder": "implemented",
             "summarizer": "implemented",
             "reviewer": "implemented",
-            "writer": "not_implemented",
+            "writer": "implemented",
         },
     }
 
@@ -367,6 +368,122 @@ async def test_reviewer() -> dict:
             "recommendations_count": len(gap_report.get("recommendations", [])),
             "confidence": gap_report.get("confidence"),
             "message": f"Reviewer found {len(gap_report.get('gaps', []))} gaps",
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.post("/api/test/writer")
+async def test_writer() -> dict:
+    """
+    Test endpoint to verify Writer Agent works.
+    
+    Returns:
+        dict: Test result with generated report
+    """
+    try:
+        writer = get_writer()
+        
+        # Create a sample state with findings
+        from app.models.state import create_initial_state
+        
+        state = create_initial_state(
+            query="What are the latest quantum computing breakthroughs in 2024?",
+            session_id="test-writer-session",
+        )
+        
+        # Add research plan
+        state["plan"] = [
+            {"id": "sq-001", "question": "What are quantum computing hardware advances?"},
+            {"id": "sq-002", "question": "What quantum algorithms were developed?"},
+        ]
+        
+        # Add sample findings
+        state["findings"] = [
+            {
+                "sub_question_id": "sq-001",
+                "source_info": {
+                    "url": "https://example.com/mit-quantum-2024",
+                    "title": "MIT Quantum Breakthrough 2024",
+                    "reliability": "high",
+                },
+                "summary": "MIT researchers demonstrated a 1000-qubit processor with 99.9% fidelity, achieving 500 microsecond coherence times.",
+                "key_facts": [
+                    "1000-qubit processor demonstrated",
+                    "99.9% fidelity achieved",
+                    "500 microsecond coherence time (10x improvement)",
+                    "Published in Nature February 2024",
+                ],
+                "metadata": {
+                    "relevance_score": 0.95,
+                    "confidence": 0.92,
+                },
+            },
+            {
+                "sub_question_id": "sq-001",
+                "source_info": {
+                    "url": "https://example.com/ibm-quantum-system",
+                    "title": "IBM Quantum System Two Announcement",
+                    "reliability": "high",
+                },
+                "summary": "IBM unveiled Quantum System Two with 133 qubits and improved error correction, claiming 1000x speedup for optimization problems.",
+                "key_facts": [
+                    "133-qubit Quantum System Two",
+                    "$100 million investment",
+                    "1000x speedup for optimization",
+                    "Enhanced error correction",
+                ],
+                "metadata": {
+                    "relevance_score": 0.88,
+                    "confidence": 0.85,
+                },
+            },
+            {
+                "sub_question_id": "sq-002",
+                "source_info": {
+                    "url": "https://example.com/google-error-correction",
+                    "title": "Google Quantum Error Correction Progress",
+                    "reliability": "high",
+                },
+                "summary": "Google Quantum AI team achieved logical qubit lifetimes exceeding 1 second using surface code error correction.",
+                "key_facts": [
+                    "Logical qubit lifetime > 1 second",
+                    "Surface code error correction",
+                    "Published in Science 2024",
+                    "Critical for fault-tolerant quantum computing",
+                ],
+                "metadata": {
+                    "relevance_score": 0.90,
+                    "confidence": 0.88,
+                },
+            },
+        ]
+        
+        # Add gap report
+        state["gaps"] = {
+            "has_gaps": False,
+            "overall_severity": "low",
+            "confidence": 0.85,
+            "gaps": [],
+            "recommendations": [],
+        }
+        
+        result = await writer.write_report(state)
+        
+        return {
+            "status": "success",
+            "title": result.get("title", "Untitled"),
+            "word_count": result.get("word_count", 0),
+            "sections_count": len(result.get("sections", [])),
+            "sources_used_count": len(result.get("sources_used", [])),
+            "executive_summary_preview": result.get("executive_summary", "")[:200] + "...",
+            "confidence_assessment": result.get("confidence_assessment", ""),
+            "message": f"Report generated: {result.get('title', 'Untitled')}",
         }
     except Exception as e:
         import traceback
