@@ -21,73 +21,25 @@ The system features a **Mission Control Dashboard** where you can:
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         MISSION CONTROL DASHBOARD                       │
-│                     (React + Vite + Tailwind + Framer Motion)           │
-│                                                                         │
-│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                 │
-│   │Research Input│  │Agent Pipeline│  │ Event Log    │                 │
-│   │  (Zustand)   │  │ (5 Agents)   │  │   (SSE)      │                 │
-│   └──────────────┘  └──────────────┘  └──────────────┘                 │
-│          │                   │                   │                      │
-│          └───────────────────┼───────────────────┘                      │
-│                              │                                          │
-│                    ┌─────────┴─────────┐                                │
-│                    │  Report Viewer    │                                │
-│                    │ (Markdown + DL)   │                                │
-│                    └───────────────────┘                                │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ HTTP / SSE
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         BACKEND API (FastAPI)                           │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
-│  │   Planner   │──▶│   Finder    │──▶│ Summarizer  │──▶│  Reviewer   │   │
-│  │ (Decompose) │  │  (Search)   │  │ (Compress)  │  │ (Check)     │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └──────┬──────┘   │
-│                                                            │          │
-│                              ┌─────────────────────────────┘          │
-│                              │ (conditional: gaps & iter<max)         │
-│                              ▼                                         │
-│                       ┌─────────────┐  ┌─────────────┐                │
-│                       │   Writer    │──▶│   Report    │                │
-│                       │ (Synthesize)│  │  (Output)   │                │
-│                       └─────────────┘  └─────────────┘                │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ SQLite (Checkpointer)
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      INFERENCE ENGINE (Ollama)                          │
-│                                                                         │
-│                    gpt-oss:20b with ROCm Support                       │
-│                      (Auto-download on first start)                     │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+![Architecture Diagram](docs/diagrams/architecture_diagram.png)
+
+*Architecture diagram showing the 3-tier system: Mission Control Dashboard, Backend API with 5 agents, and Inference/Storage layers.*
+
+**To regenerate:** `python docs/diagrams/generate_architecture.py`
 
 ### LangGraph Workflow
 
-```mermaid
-graph TD
-    A[User Query] --> B[Planner]
-    B -->|Sub-questions| C[Finder]
-    C -->|Sources| D[Summarizer]
-    D -->|Findings| E[Reviewer]
-    E -->|Gaps detected & iter < max| B
-    E -->|Approved| F[Writer]
-    F --> G[Final Report]
-    
-    style A fill:#1e293b,stroke:#3b82f6,color:#fff
-    style B fill:#1e293b,stroke:#3b82f6,color:#fff
-    style C fill:#1e293b,stroke:#10b981,color:#fff
-    style D fill:#1e293b,stroke:#f59e0b,color:#fff
-    style E fill:#1e293b,stroke:#8b5cf6,color:#fff
-    style F fill:#1e293b,stroke:#ec4899,color:#fff
-    style G fill:#064e3b,stroke:#10b981,color:#fff
-```
+The 5 agents work in a pipeline with an optional iteration loop:
+
+1. **Planner** decomposes the query into sub-questions
+2. **Finder** discovers diverse sources via DuckDuckGo
+3. **Summarizer** compresses content 10:1 with key facts
+4. **Reviewer** checks for gaps and decides: continue iterating or finish
+5. **Writer** synthesizes the final report with citations
+
+**Iteration Loop:** If gaps are found and max iterations not reached, the Reviewer sends the research back to the Planner for deeper investigation.
+
+A light theme version of the architecture diagram is also available: [`architecture_diagram_light.png`](docs/diagrams/architecture_diagram_light.png)
 
 ### The 5 Agents
 

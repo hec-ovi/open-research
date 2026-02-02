@@ -282,9 +282,18 @@ planner → finder → summarizer → reviewer → [conditional] → writer → 
 
 ### Step 6.5: Documentation ✅
 - [x] Final README update with architecture diagrams
-- [x] Added Mermaid graph visualization
+- [x] Created Python script to generate architecture diagram image
+- [x] Generated both dark and light theme PNG images
 - [x] Complete API endpoint reference
-- [x] Deployment guide with troubleshooting
+- [x] Deployment guide
+
+### Bonus: Architecture Diagram Images
+- [x] Created `docs/diagrams/generate_architecture.py` - Python script using matplotlib
+- [x] Generated `architecture_diagram.png` - Dark theme for dark mode users
+- [x] Generated `architecture_diagram_light.png` - Light theme for documentation
+- [x] Diagram shows all 3 layers: Dashboard, Backend API with 5 agents, Storage/Inference
+- [x] Color-coded agents with legend
+- [x] Iteration loop visualization with troubleshooting
 - [x] All 6 phases documented
 
 ---

@@ -442,3 +442,27 @@ Ready for Phase 2: The First Agent (Planner)
   - Documentation comprehensive and up-to-date
   - Ready for production use
 
+
+---
+
+### Feature - Architecture Diagram Images
+- **Context:** User requested converting the ASCII art diagram in README to actual image files
+- **Action:**
+  - Created `docs/diagrams/` folder for documentation assets
+  - Created `generate_architecture.py` using matplotlib:
+    - Dark theme version matching the dashboard UI
+    - Light theme version for documentation/printing
+    - Shows 3 layers: Dashboard, Backend API, Storage/Inference
+    - 5 agents color-coded (Planner=blue, Finder=green, Summarizer=amber, Reviewer=violet, Writer=pink)
+    - Iteration loop arrow from Reviewer back to Planner
+    - Legend with agent colors
+    - Protocols note at bottom
+  - Updated README.md to use the image instead of ASCII art
+  - Removed old Mermaid diagram text, replaced with description
+  - Added note about light theme version availability
+- **Result:** Professional-looking architecture diagram as PNG images
+  - Both dark and light versions available
+  - Can be regenerated anytime with the Python script
+  - README now displays the diagram properly
+  - Images stored in docs/diagrams/ folder
+
