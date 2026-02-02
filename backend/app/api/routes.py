@@ -11,6 +11,7 @@ from pathlib import Path
 from app.core.config import settings
 from app.core.ollama_adapter import get_adapter
 from app.core.checkpointer import get_checkpointer
+from app.agents.planner import get_planner
 from app.models.state import ResearchState, create_initial_state, get_progress_percent
 
 # Create router for API endpoints
@@ -131,4 +132,42 @@ async def checkpointer_stats() -> dict:
         return {
             "status": "error",
             "error": str(e),
+        }
+
+
+@router.post("/api/test/planner")
+async def test_planner() -> dict:
+    """
+    Test endpoint to verify Planner Agent works.
+    
+    Returns:
+        dict: Test result with generated research plan
+    """
+    try:
+        planner = get_planner()
+        result = await planner.plan(
+            "What are the latest developments in quantum computing?"
+        )
+        
+        plan = result.get("plan", [])
+        return {
+            "status": "success",
+            "query": "What are the latest developments in quantum computing?",
+            "sub_questions_count": len(plan),
+            "sub_questions": [
+                {
+                    "id": sq.get("id"),
+                    "question": sq.get("question"),
+                    "status": sq.get("status"),
+                }
+                for sq in plan
+            ],
+            "message": f"Planner generated {len(plan)} sub-questions",
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
         }

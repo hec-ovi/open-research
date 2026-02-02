@@ -27,7 +27,7 @@ A production-grade local deep research application using multi-agent orchestrati
 |-------|--------|-------------|
 | **Phase 0** | ✅ Complete | Project infrastructure, Docker setup, GPU support |
 | **Phase 1** | ✅ Complete | Backend core: structure, config, adapter, state, checkpointer, docs |
-| **Phase 2** | 🔄 Ready | First Agent (Planner) - Query decomposition |
+| **Phase 2** | 🔄 In Progress | First Agent (Planner) - Query decomposition |
 | **Phase 3** | ⏳ Pending | Remaining Agents (Source Finder, Summarizer, Reviewer, Writer) |
 | **Phase 4** | ⏳ Pending | Streaming & Interruption (SSE, stop/resume) |
 | **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
@@ -195,6 +195,9 @@ open-research/
 │   │   │   ├── ollama_adapter.py   # VLLM singleton
 │   │   │   └── checkpointer.py     # SQLite persistence
 │   │   ├── agents/             # LangGraph nodes (Phase 2 🔄)
+│   │   │   ├── prompts/        # Agent prompts as .md files
+│   │   │   │   └── planner.md  # Planner agent prompt
+│   │   │   └── planner.py      # Agent logic
 │   │   └── models/
 │   │       └── state.py        # ResearchState TypedDict
 │   ├── docs/
@@ -282,6 +285,11 @@ curl http://localhost:11434/api/tags | grep gpt-oss
 ## Development Status
 
 **Current Phase:** Phase 2 - The First Agent (Planner) 🔄
+
+**Latest Updates:**
+- ✅ Planner Agent implemented with prompt loaded from `prompts/planner.md`
+- ✅ Agent prompts are now separated from code (Modularity principle)
+- 🔄 Testing: `curl -X POST http://localhost:8000/api/test/planner`
 
 See `/agent/PLAN.md` for detailed execution roadmap.
 
