@@ -102,7 +102,16 @@ class ResearchGraph:
         # Linear flow: planner → finder → summarizer → reviewer
         self.builder.add_edge("planner", "finder")
         self.builder.add_edge("finder", "summarizer")
-        self.builder.add_edge("summarizer", "reviewer")
+        
+        # Conditional edge: summarizer may request finder retry if 0 key facts
+        self.builder.add_conditional_edges(
+            "summarizer",
+            self._summarizer_router,
+            {
+                "retry_finder": "finder",  # Loop back to finder for more sources
+                "continue": "reviewer",     # Proceed to reviewer
+            }
+        )
         
         # Conditional edge: reviewer decides next step
         self.builder.add_conditional_edges(
@@ -333,15 +342,26 @@ class ResearchGraph:
         existing_findings = state.get("findings", [])
         state["findings"] = existing_findings + findings
         
-        await self._emit_event(
-            "summarizer_complete",
-            f"Extracted {total_key_facts} key facts from {len(findings)} sources (10:1 compression)",
-            session_id,
-            findings_count=len(findings),
-            key_facts_count=total_key_facts
-        )
+        # Check if we got 0 key facts - need to retry finder with extended search
+        if total_key_facts == 0 and len(sources) > 0:
+            await self._emit_event(
+                "summarizer_retry",
+                "No key facts extracted. Extending search with broader queries...",
+                session_id,
+                retry_reason="zero_key_facts"
+            )
+            state["needs_finder_retry"] = True
+        else:
+            state["needs_finder_retry"] = False
+            await self._emit_event(
+                "summarizer_complete",
+                f"Extracted {total_key_facts} key facts from {len(findings)} sources (10:1 compression)",
+                session_id,
+                findings_count=len(findings),
+                key_facts_count=total_key_facts
+            )
         
-        logger.info(f"[Graph] Summarizer complete: {len(findings)} new findings")
+        logger.info(f"[Graph] Summarizer complete: {len(findings)} new findings, {total_key_facts} key facts")
         return state
     
     async def _reviewer_node(self, state: ResearchState) -> ResearchState:
@@ -475,6 +495,31 @@ class ResearchGraph:
         
         # Gaps found, continue iterating
         logger.info(f"[Graph] Router: gaps detected, continuing iteration {iteration + 1}")
+        return "continue"
+    
+    def _summarizer_router(self, state: ResearchState) -> Literal["retry_finder", "continue"]:
+        """
+        Router function - Decides next step after summarizer.
+        
+        Logic:
+        - If 0 key facts extracted → retry_finder (get more sources)
+        - Otherwise → continue to reviewer
+        
+        Args:
+            state: Current ResearchState with findings
+        
+        Returns:
+            str: "retry_finder" to get more sources or "continue" to reviewer
+        """
+        needs_retry = state.get("needs_finder_retry", False)
+        retry_count = state.get("finder_retry_count", 0)
+        
+        if needs_retry and retry_count < 2:  # Max 2 retries
+            state["finder_retry_count"] = retry_count + 1
+            logger.info(f"[Graph] Summarizer router: retrying finder (attempt {retry_count + 1})")
+            return "retry_finder"
+        
+        logger.info("[Graph] Summarizer router: continuing to reviewer")
         return "continue"
     
     async def run(self, query: str, session_id: str, timeout: float = 300.0) -> ResearchState:
