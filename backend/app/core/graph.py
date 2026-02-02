@@ -211,6 +211,10 @@ class ResearchGraph:
         all_sources = []
         
         # Find sources for each sub-question
+        seen_urls = set()
+        unique_sources = []
+        domains = set()
+        
         for sq in plan:
             sq_id = sq.get("id", "unknown")
             question = sq.get("question", "")
@@ -219,21 +223,29 @@ class ResearchGraph:
             result = await finder.find_sources(question, sq_id)
             
             sources = result.get("sources", [])
-            all_sources.extend(sources)
+            
+            # Stream each new source as it's found (with deduplication)
+            for source in sources:
+                url = source.get("url", "")
+                domain = source.get("domain", "")
+                if url and url not in seen_urls:
+                    seen_urls.add(url)
+                    unique_sources.append(source)
+                    if domain:
+                        domains.add(domain)
+                    
+                    # Emit event for this source
+                    await self._emit_event(
+                        "finder_source",
+                        f"Found source: {source.get('title', 'Untitled')[:50]}...",
+                        session_id,
+                        source_title=source.get('title', 'Untitled'),
+                        source_url=url,
+                        source_domain=domain,
+                        sources_so_far=len(unique_sources)
+                    )
+            
             logger.info(f"[Graph] Found {len(sources)} sources for {sq_id}")
-        
-        # Deduplicate sources by URL
-        seen_urls = set()
-        unique_sources = []
-        domains = set()
-        for source in all_sources:
-            url = source.get("url", "")
-            domain = source.get("domain", "")
-            if url and url not in seen_urls:
-                seen_urls.add(url)
-                unique_sources.append(source)
-                if domain:
-                    domains.add(domain)
         
         state["sources"] = unique_sources
         

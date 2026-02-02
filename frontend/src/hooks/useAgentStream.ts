@@ -80,6 +80,10 @@ export function useAgentStream(): UseAgentStreamReturn {
           case 'finder_running':
             setAgentRunning('Finder');
             break;
+          
+          case 'finder_source':
+            // Source discovered - just add to event log
+            break;
             
           case 'finder_complete':
             setAgentCompleted('Finder');

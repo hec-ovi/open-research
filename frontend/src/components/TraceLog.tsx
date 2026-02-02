@@ -24,6 +24,7 @@ const eventIcons: Record<string, React.ElementType> = {
   planner_running: Brain,
   planner_complete: Brain,
   finder_running: Search,
+  finder_source: Search,
   finder_complete: Search,
   summarizer_running: FileText,
   summarizer_complete: FileText,
@@ -51,6 +52,7 @@ const eventColors: Record<string, string> = {
   planner_running: 'text-blue-400',
   planner_complete: 'text-blue-400',
   finder_running: 'text-emerald-400',
+  finder_source: 'text-emerald-400',
   finder_complete: 'text-emerald-400',
   summarizer_running: 'text-amber-400',
   summarizer_complete: 'text-amber-400',
@@ -126,7 +128,21 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
             {event.message}
           </p>
         )}
-        {/* Display URLs for finder events */}
+        {/* Display individual finder source */}
+        {event.type === 'finder_source' && event.source_url && (
+          <div className="mt-1">
+            <a
+              href={event.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-xs text-emerald-400/80 hover:text-emerald-400 truncate transition-colors"
+              title={event.source_url}
+            >
+              ↳ {event.source_title || new URL(event.source_url).hostname}
+            </a>
+          </div>
+        )}
+        {/* Display URLs for finder complete event */}
         {event.urls && event.urls.length > 0 && (
           <div className="mt-2 space-y-0.5">
             {event.urls.map((url: string, idx: number) => (
