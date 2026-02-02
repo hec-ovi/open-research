@@ -4,7 +4,7 @@
  * The central command interface for the Deep Research System.
  * Assembles all components into a cohesive dashboard layout.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '../components/Header';
 import { ResearchInput } from '../components/ResearchInput';
@@ -20,8 +20,13 @@ import { Terminal, Cpu } from 'lucide-react';
 export function MissionControl() {
   const { status, finalReport } = useResearchStore();
   const [isConnected, setIsConnected] = useState(true);
+  const reportRef = useRef<HTMLDivElement>(null);
   const isRunning = status === 'running';
   const isCompleted = status === 'completed';
+
+  const scrollToReport = () => {
+    reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Monitor connection status
   useEffect(() => {
@@ -40,11 +45,7 @@ export function MissionControl() {
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       {/* Header with heartbeat indicator */}
-      <Header 
-        isConnected={isConnected}
-        systemStatus="LangGraph + Ollama"
-        statusColor="green"
-      />
+      <Header isConnected={isConnected} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -67,6 +68,7 @@ export function MissionControl() {
         {/* Report Section (shown when completed) */}
         {isCompleted && finalReport && (
           <motion.section
+            ref={reportRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
@@ -105,7 +107,7 @@ export function MissionControl() {
                 )
               }
             >
-              <TraceLog />
+              <TraceLog onViewReport={scrollToReport} />
             </Card>
           </div>
         </div>
@@ -141,11 +143,8 @@ export function MissionControl() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 text-sm text-slate-500">
-              <kbd className="px-2 py-1 bg-slate-800 rounded text-xs">Ctrl</kbd>
-              <span>+</span>
-              <kbd className="px-2 py-1 bg-slate-800 rounded text-xs">Enter</kbd>
-              <span className="ml-1">Start Research</span>
+            <div className="text-right">
+              <p className="text-xs text-slate-600">v0.1.0 • MIT License</p>
             </div>
           </div>
         </motion.footer>

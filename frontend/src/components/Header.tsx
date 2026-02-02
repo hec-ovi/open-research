@@ -1,20 +1,17 @@
 /**
  * Header - Layout Component
  * 
- * Isolated header component with logo, system status, and heartbeat indicator.
+ * Isolated header component with logo and heartbeat indicator.
  * Follows atomic design principles - no nested div soup.
  */
 import { motion } from 'framer-motion';
-import { Activity, Zap } from 'lucide-react';
-import { StopButton } from './StopButton';
+import { Activity, Settings } from 'lucide-react';
 
 interface HeaderProps {
   /** Whether the SSE connection is healthy */
   isConnected?: boolean;
-  /** System status text */
-  systemStatus?: string;
-  /** System status color */
-  statusColor?: 'green' | 'amber' | 'red';
+  /** Callback when settings is clicked */
+  onSettingsClick?: () => void;
 }
 
 /**
@@ -59,33 +56,10 @@ function Logo() {
       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
         <Activity className="w-5 h-5 text-white" />
       </div>
-      <div className="flex items-center gap-2">
+      <div>
         <span className="font-bold text-xl text-white">Deep Research</span>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-          v0.1.0
-        </span>
+        <p className="text-xs text-slate-500">Multi-Agent AI Research System</p>
       </div>
-    </div>
-  );
-}
-
-/**
- * SystemInfo - Shows backend status
- */
-function SystemInfo({ status, color }: { status: string; color: string }) {
-  const colorClasses = {
-    green: 'text-emerald-400',
-    amber: 'text-amber-400',
-    red: 'text-red-400',
-  };
-
-  return (
-    <div className="hidden md:flex items-center gap-2 text-sm">
-      <Zap className="w-4 h-4 text-amber-400" />
-      <span className="text-slate-500">Powered by</span>
-      <span className={colorClasses[color as keyof typeof colorClasses] || 'text-slate-400'}>
-        {status}
-      </span>
     </div>
   );
 }
@@ -95,8 +69,7 @@ function SystemInfo({ status, color }: { status: string; color: string }) {
  */
 export function Header({
   isConnected = true,
-  systemStatus = 'LangGraph + Ollama',
-  statusColor = 'green',
+  onSettingsClick,
 }: HeaderProps) {
   return (
     <header className="border-b border-slate-800/50 bg-[#0a0a0f]/80 backdrop-blur-md sticky top-0 z-50">
@@ -104,11 +77,18 @@ export function Header({
         {/* Left: Logo */}
         <Logo />
 
-        {/* Right: System info, Heartbeat, Stop button */}
+        {/* Right: Heartbeat, Settings */}
         <div className="flex items-center gap-4">
-          <SystemInfo status={systemStatus} color={statusColor} />
           <HeartbeatIndicator isConnected={isConnected} />
-          <StopButton />
+          {onSettingsClick && (
+            <button
+              onClick={onSettingsClick}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -1,13 +1,12 @@
 /**
  * ResearchInput - Feature Component
  * 
- * Input form for starting new research with query input.
+ * Input form for starting new research with integrated action buttons.
+ * ChatGPT-style interface with buttons inside the input.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sparkles } from 'lucide-react';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
+import { Search, Sparkles, Play, Square } from 'lucide-react';
 import { useResearch } from '../hooks/useResearch';
 import { useAgentStream } from '../hooks/useAgentStream';
 import { useResearchStore } from '../stores/researchStore';
@@ -15,19 +14,28 @@ import { useResearchStore } from '../stores/researchStore';
 export function ResearchInput() {
   const [query, setQuery] = useState('');
   const { startResearch, isLoading } = useResearch();
-  const { connect } = useAgentStream();
+  const { connect, disconnect } = useAgentStream();
   const { status, sessionId } = useResearchStore();
   const isRunning = status === 'running';
 
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!query.trim() || isLoading) return;
+    if (!query.trim() || isLoading || isRunning) return;
 
     const newSessionId = await startResearch(query);
     if (newSessionId) {
       connect(newSessionId);
     }
-  }, [query, isLoading, startResearch, connect]);
+  }, [query, isLoading, isRunning, startResearch, connect]);
+
+  const { stopResearch } = useResearch();
+
+  const handleStop = useCallback(async () => {
+    if (sessionId) {
+      await stopResearch(sessionId);
+      disconnect();
+    }
+  }, [sessionId, stopResearch, disconnect]);
 
   // Keyboard shortcut: Ctrl+Enter to submit
   useEffect(() => {
@@ -68,27 +76,56 @@ export function ResearchInput() {
       </div>
 
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-            <Input
-              type="text"
-              placeholder="What would you like to research? (e.g., 'Latest AI developments in healthcare')"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              disabled={isRunning}
-              className="pl-12 h-14 text-lg"
-            />
+        <div className="relative flex items-center">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-10" />
+          
+          <input
+            type="text"
+            placeholder="What would you like to research?"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={isRunning}
+            className="w-full pl-12 pr-14 py-4 bg-slate-800/50 border border-slate-700 rounded-xl
+                       text-white placeholder-slate-500 text-lg
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
+                       transition-all duration-200
+                       disabled:opacity-70 disabled:cursor-not-allowed"
+          />
+          
+          {/* Action button inside input */}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            {isRunning ? (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="p-2.5 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30
+                           border border-amber-500/30 transition-colors"
+                title="Stop research"
+              >
+                <Square className="w-5 h-5 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!query.trim() || isLoading}
+                className="p-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           transition-colors"
+                title="Start research"
+              >
+                {isLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Search className="w-5 h-5" />
+                  </motion.div>
+                ) : (
+                  <Play className="w-5 h-5 fill-current" />
+                )}
+              </button>
+            )}
           </div>
-          <Button
-            type="submit"
-            isLoading={isLoading}
-            disabled={!query.trim() || isRunning}
-            size="lg"
-            className="h-14 px-8"
-          >
-            {isRunning ? 'Researching...' : 'Start Research'}
-          </Button>
         </div>
       </form>
 

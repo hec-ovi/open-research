@@ -14,25 +14,36 @@ import {
   PenTool, 
   AlertCircle,
   XCircle,
-  Brain
+  Brain,
+  FileSearch
 } from 'lucide-react';
 import type { TraceEvent } from '../types';
 
 const eventIcons: Record<string, React.ElementType> = {
   research_started: Play,
   planner_running: Brain,
-  planner_complete: Search,
+  planner_complete: Brain,
   finder_running: Search,
-  finder_complete: FileText,
+  finder_complete: Search,
   summarizer_running: FileText,
-  summarizer_complete: CheckCircle,
+  summarizer_complete: FileText,
   reviewer_running: CheckCircle,
   reviewer_complete: CheckCircle,
   writer_running: PenTool,
-  research_completed: PenTool,
+  writer_complete: PenTool,
+  research_completed: CheckCircle,
   research_error: AlertCircle,
   research_stopped: XCircle,
   connected: Play,
+};
+
+// Agent color mapping
+const AGENT_COLORS = {
+  planner: '#3b82f6',    // blue-400
+  finder: '#10b981',     // emerald-400
+  summarizer: '#f59e0b', // amber-400
+  reviewer: '#8b5cf6',   // violet-400
+  writer: '#ec4899',     // pink-400
 };
 
 const eventColors: Record<string, string> = {
@@ -46,11 +57,22 @@ const eventColors: Record<string, string> = {
   reviewer_running: 'text-violet-400',
   reviewer_complete: 'text-violet-400',
   writer_running: 'text-pink-400',
-  research_completed: 'text-pink-400',
+  writer_complete: 'text-pink-400',
+  research_completed: 'text-emerald-400',
   research_error: 'text-red-400',
   research_stopped: 'text-amber-400',
   connected: 'text-emerald-400',
 };
+
+// Get agent color for border styling
+function getAgentColor(eventType: string): string {
+  if (eventType.includes('planner')) return AGENT_COLORS.planner;
+  if (eventType.includes('finder')) return AGENT_COLORS.finder;
+  if (eventType.includes('summarizer')) return AGENT_COLORS.summarizer;
+  if (eventType.includes('reviewer')) return AGENT_COLORS.reviewer;
+  if (eventType.includes('writer')) return AGENT_COLORS.writer;
+  return 'transparent';
+}
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -65,6 +87,8 @@ function formatTime(timestamp: string): string {
 function EventItem({ event, index }: { event: TraceEvent; index: number }) {
   const Icon = eventIcons[event.type] || Play;
   const colorClass = eventColors[event.type] || 'text-slate-400';
+  const agentColor = getAgentColor(event.type);
+  const isRunning = event.type.includes('_running');
   
   return (
     <motion.div
@@ -72,9 +96,13 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+      className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-slate-800/50 transition-colors group"
+      style={{ 
+        borderLeft: `2px solid ${agentColor}`,
+        backgroundColor: isRunning ? `${agentColor}10` : undefined 
+      }}
     >
-      <div className={`mt-0.5 ${colorClass}`}>
+      <div className={`mt-0.5 ${colorClass} ${isRunning ? 'animate-pulse' : ''}`}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
@@ -85,14 +113,17 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
           <span className={`text-sm font-medium ${colorClass}`}>
             {event.type.replace(/_/g, ' ')}
           </span>
+          {isRunning && (
+            <span 
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: agentColor }}
+            />
+          )}
         </div>
         {/* Display agent activity message */}
         {event.message && (
-          <p className="text-sm text-slate-300 mt-1">{event.message}</p>
-        )}
-        {event.details && Object.keys(event.details).length > 0 && (
-          <p className="text-xs text-slate-500 mt-0.5 truncate">
-            {JSON.stringify(event.details)}
+          <p className={`text-sm mt-1 ${isRunning ? 'text-slate-200' : 'text-slate-400'}`}>
+            {event.message}
           </p>
         )}
         {event.error && (
@@ -103,9 +134,14 @@ function EventItem({ event, index }: { event: TraceEvent; index: number }) {
   );
 }
 
-export function TraceLog() {
-  const { events, status } = useResearchStore();
+interface TraceLogProps {
+  onViewReport?: () => void;
+}
+
+export function TraceLog({ onViewReport }: TraceLogProps) {
+  const { events, status, finalReport } = useResearchStore();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isCompleted = status === 'completed';
 
   // Filter out heartbeat events
   const displayEvents = events.filter(e => e.type !== 'heartbeat');
@@ -146,6 +182,29 @@ export function TraceLog() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* See Report Button */}
+      {isCompleted && finalReport && onViewReport && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 pt-4 border-t border-slate-800"
+        >
+          <button
+            onClick={onViewReport}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 
+                       bg-emerald-500/20 hover:bg-emerald-500/30 
+                       border border-emerald-500/30 rounded-lg
+                       text-emerald-400 transition-colors"
+          >
+            <FileSearch className="w-5 h-5" />
+            <span className="font-medium">See Report</span>
+            <span className="text-sm text-emerald-500/70">
+              ({finalReport.wordCount} words)
+            </span>
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 }
