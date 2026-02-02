@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.core.ollama_adapter import get_adapter
+from app.models.state import ResearchState, create_initial_state, get_progress_percent
 
 # Create router for API endpoints
 router = APIRouter()
@@ -82,3 +83,29 @@ async def test_ollama() -> dict:
             "status": "error",
             "error": str(e),
         }
+
+
+@router.post("/api/test/state")
+async def test_state() -> dict:
+    """
+    Test endpoint to verify ResearchState works.
+    
+    Returns:
+        dict: Sample state structure
+    """
+    state = create_initial_state(
+        query="What are the latest developments in quantum computing?",
+        session_id="test-session-001",
+    )
+    
+    return {
+        "status": "success",
+        "state": {
+            "query": state["query"],
+            "session_id": state["session_id"],
+            "progress_percent": get_progress_percent(state),
+            "plan_count": len(state.get("plan", [])),
+            "sources_count": len(state.get("sources", [])),
+        },
+        "message": "ResearchState typed dict working correctly",
+    }
