@@ -27,7 +27,7 @@ A production-grade local deep research application using multi-agent orchestrati
 |-------|--------|-------------|
 | **Phase 0** | ✅ Complete | Project infrastructure, Docker setup, GPU support |
 | **Phase 1** | ✅ Complete | Backend core: structure, config, adapter, state, checkpointer, docs |
-| **Phase 2** | 🔄 In Progress | First Agent (Planner) - Query decomposition |
+| **Phase 2** | ✅ Complete | First Agent (Planner) - Query decomposition + LangGraph setup |
 | **Phase 3** | ⏳ Pending | Remaining Agents (Source Finder, Summarizer, Reviewer, Writer) |
 | **Phase 4** | ⏳ Pending | Streaming & Interruption (SSE, stop/resume) |
 | **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
@@ -147,6 +147,10 @@ curl -X POST http://localhost:8000/api/test/ollama
 # 5. Test Research State
 curl -X POST http://localhost:8000/api/test/state
 # Response: {"status":"success","state":{"query":"...","progress_percent":0,...}}
+
+# 6. Test LangGraph (end-to-end)
+curl -X POST http://localhost:8000/api/test/graph
+# Response: {"status":"success","sub_questions_count":6,...}}
 ```
 
 ### Verify GPU is Working
@@ -193,7 +197,8 @@ open-research/
 │   │   ├── core/
 │   │   │   ├── config.py       # Pydantic Settings
 │   │   │   ├── ollama_adapter.py   # VLLM singleton
-│   │   │   └── checkpointer.py     # SQLite persistence
+│   │   │   ├── checkpointer.py     # LangGraph persistence
+│   │   │   └── graph.py            # LangGraph workflow definition
 │   │   ├── agents/             # LangGraph nodes (Phase 2 🔄)
 │   │   │   ├── prompts/        # Agent prompts as .md files
 │   │   │   │   └── planner.md  # Planner agent prompt
@@ -287,9 +292,10 @@ curl http://localhost:11434/api/tags | grep gpt-oss
 **Current Phase:** Phase 2 - The First Agent (Planner) 🔄
 
 **Latest Updates:**
-- ✅ Planner Agent implemented with prompt loaded from `prompts/planner.md`
-- ✅ Agent prompts are now separated from code (Modularity principle)
-- 🔄 Testing: `curl -X POST http://localhost:8000/api/test/planner`
+- ✅ Phase 2 Complete: Planner Agent + LangGraph setup working
+- ✅ End-to-end graph execution: Query → Planner → Research Plan
+- ✅ All test endpoints working: /api/test/planner, /api/test/graph
+- 🔄 Phase 3: Remaining Agents (Source Finder, Summarizer, Reviewer, Writer)
 
 See `/agent/PLAN.md` for detailed execution roadmap.
 

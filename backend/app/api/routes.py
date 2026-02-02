@@ -11,6 +11,7 @@ from pathlib import Path
 from app.core.config import settings
 from app.core.ollama_adapter import get_adapter
 from app.core.checkpointer import get_checkpointer
+from app.core.graph import get_research_graph
 from app.agents.planner import get_planner
 from app.models.state import ResearchState, create_initial_state, get_progress_percent
 
@@ -51,7 +52,7 @@ async def api_status() -> dict:
         "status": "operational",
         "version": "0.1.0",
         "features": {
-            "planner": "not_implemented",
+            "planner": "implemented",
             "source_finder": "not_implemented",
             "summarizer": "not_implemented",
             "reviewer": "not_implemented",
@@ -123,7 +124,7 @@ async def checkpointer_stats() -> dict:
     """
     try:
         checkpointer = get_checkpointer()
-        stats = checkpointer.get_stats()
+        stats = await checkpointer.get_stats()
         return {
             "status": "success",
             "stats": stats,
@@ -163,6 +164,52 @@ async def test_planner() -> dict:
                 for sq in plan
             ],
             "message": f"Planner generated {len(plan)} sub-questions",
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.post("/api/test/graph")
+async def test_graph() -> dict:
+    """
+    Test endpoint to verify LangGraph works end-to-end.
+    
+    Runs a complete research session through the graph.
+    
+    Returns:
+        dict: Test result with final state
+    """
+    try:
+        import uuid
+        
+        graph = get_research_graph()
+        session_id = f"test-{uuid.uuid4().hex[:8]}"
+        
+        result = await graph.run(
+            query="Recent AI developments in healthcare",
+            session_id=session_id,
+        )
+        
+        plan = result.get("plan", [])
+        
+        return {
+            "status": "success",
+            "session_id": session_id,
+            "query": result.get("query"),
+            "sub_questions_count": len(plan),
+            "sub_questions": [
+                {
+                    "id": sq.get("id"),
+                    "question": sq.get("question"),
+                }
+                for sq in plan[:3]  # Show first 3
+            ],
+            "message": f"Graph executed successfully with {len(plan)} sub-questions",
         }
     except Exception as e:
         import traceback
