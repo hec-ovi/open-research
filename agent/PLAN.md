@@ -134,7 +134,7 @@
 ### In Progress 🔄
 | Phase | Component | Status |
 |-------|-----------|--------|
-| Phase 4 | Streaming & Interruption | ⏳ Next: SSE endpoints, stop/resume |
+| Phase 4 | Streaming & Interruption | ✅ Complete: SSE endpoints, stop/resume working |
 
 ### System Status
 - **All containers healthy:** backend, ollama
@@ -201,15 +201,26 @@ planner → finder → summarizer → reviewer → [conditional] → writer → 
 
 ## Phase 4: Streaming & Interruption 📡
 
-### Step 4.1: SSE Endpoint
-- [ ] Create `GET /research/{id}/events` SSE endpoint
-- [ ] Stream graph events to client
-- [ ] Validate: Events stream correctly
+### Step 4.1: SSE Endpoint ✅ DONE
+- [x] Create `GET /research/{id}/events` SSE endpoint
+- [x] Create `POST /research/start` endpoint to initiate research
+- [x] Create ResearchManager for session tracking
+- [x] Stream events: connected, research_started, heartbeat, completed, error
+- [x] Add supporting endpoints: status, list, stop
 
-### Step 4.2: Stop/Interrupt
-- [ ] Create `POST /research/{id}/stop` endpoint
-- [ ] Implement graph interruption
-- [ ] Validate: Can stop running research
+### Step 4.2: Stop/Interrupt ✅ DONE
+- [x] Create `POST /research/{id}/stop` endpoint
+- [x] Implement graph interruption via asyncio task cancellation
+- [x] Add stop_event for graceful shutdown
+- [x] Validate: Can stop running research
+
+**New Endpoints:**
+- `POST /api/research/start` - Start research, returns session_id
+- `GET /api/research/{id}/events` - SSE stream of events
+- `POST /api/research/{id}/stop` - Stop running research
+- `GET /api/research/{id}/status` - Get session status
+- `GET /api/research/sessions` - List all sessions
+- `POST /api/test/streaming` - Quick test endpoint
 
 ---
 

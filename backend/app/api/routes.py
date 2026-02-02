@@ -515,3 +515,263 @@ async def test_writer() -> dict:
             "error": str(e),
             "traceback": traceback.format_exc(),
         }
+
+
+# =============================================================================
+# Phase 4: Streaming & Interruption Endpoints
+# =============================================================================
+
+from fastapi.responses import StreamingResponse
+from app.core.research_manager import get_research_manager
+import json
+import uuid
+
+
+@router.post("/api/research/start")
+async def start_research(request: dict) -> dict:
+    """
+    Start a new research session with streaming support.
+    
+    Args:
+        request: {"query": "research topic"}
+    
+    Returns:
+        dict: Session ID for streaming
+    
+    Example:
+        curl -X POST http://localhost:8000/api/research/start \
+          -H "Content-Type: application/json" \
+          -d '{"query": "AI in healthcare 2024"}'
+    """
+    try:
+        query = request.get("query", "")
+        if not query:
+            return {"status": "error", "error": "Query is required"}
+        
+        # Generate session ID
+        session_id = f"research-{uuid.uuid4().hex[:12]}"
+        
+        # Start research
+        manager = get_research_manager()
+        await manager.start_research(query, session_id)
+        
+        return {
+            "status": "started",
+            "session_id": session_id,
+            "query": query,
+            "stream_url": f"/api/research/{session_id}/events",
+            "stop_url": f"/api/research/{session_id}/stop",
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.get("/api/research/{session_id}/events")
+async def stream_research_events(session_id: str):
+    """
+    Stream research events via Server-Sent Events (SSE).
+    
+    This endpoint provides real-time updates on research progress.
+    
+    Args:
+        session_id: The research session ID
+    
+    Returns:
+        StreamingResponse: SSE stream of events
+    
+    Event Types:
+        - connected: Initial connection established
+        - research_started: Research has begun
+        - heartbeat: Keep-alive ping (every second)
+        - research_completed: Research finished successfully
+        - research_error: Research failed with error
+        - research_stopped: Research was manually stopped
+    
+    Example:
+        curl http://localhost:8000/api/research/research-abc123/events
+    
+    JavaScript Example:
+        const eventSource = new EventSource('/api/research/{id}/events');
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log(data.type, data);
+        };
+    """
+    async def event_generator():
+        manager = get_research_manager()
+        
+        async for event in manager.stream_events(session_id):
+            # Format as SSE
+            yield f"data: {json.dumps(event)}\n\n"
+        
+        # Send final done event
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
+
+
+@router.post("/api/research/{session_id}/stop")
+async def stop_research(session_id: str) -> dict:
+    """
+    Stop a running research session.
+    
+    Args:
+        session_id: The research session ID to stop
+    
+    Returns:
+        dict: Stop result
+    
+    Example:
+        curl -X POST http://localhost:8000/api/research/research-abc123/stop
+    """
+    try:
+        manager = get_research_manager()
+        stopped = await manager.stop_research(session_id)
+        
+        if stopped:
+            return {
+                "status": "stopped",
+                "session_id": session_id,
+                "message": "Research session stopped successfully",
+            }
+        else:
+            return {
+                "status": "not_found_or_completed",
+                "session_id": session_id,
+                "message": "Session not found or already completed",
+            }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.get("/api/research/{session_id}/status")
+async def get_research_status(session_id: str) -> dict:
+    """
+    Get the current status of a research session.
+    
+    Args:
+        session_id: The research session ID
+    
+    Returns:
+        dict: Session status and metadata
+    """
+    try:
+        manager = get_research_manager()
+        session = manager.get_session(session_id)
+        
+        if not session:
+            return {
+                "status": "not_found",
+                "session_id": session_id,
+            }
+        
+        state = session.state
+        final_report = state.get("final_report", {})
+        
+        return {
+            "status": "running" if session.is_running() else "completed",
+            "session_id": session_id,
+            "query": state.get("query", ""),
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+            "is_stopped": session.is_stopped(),
+            "progress": {
+                "iteration": state.get("iteration", 0),
+                "plan_count": len(state.get("plan", [])),
+                "sources_count": len(state.get("sources", [])),
+                "findings_count": len(state.get("findings", [])),
+            },
+            "result": {
+                "title": final_report.get("title") if final_report else None,
+                "word_count": final_report.get("word_count", 0) if final_report else 0,
+            } if final_report else None,
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.get("/api/research/sessions")
+async def list_research_sessions() -> dict:
+    """
+    List all research sessions.
+    
+    Returns:
+        dict: List of sessions
+    """
+    try:
+        manager = get_research_manager()
+        sessions = manager.get_all_sessions()
+        
+        return {
+            "status": "success",
+            "count": len(sessions),
+            "sessions": [
+                {
+                    "session_id": s.session_id,
+                    "query": s.state.get("query", "")[:50] + "...",
+                    "status": "running" if s.is_running() else "completed",
+                    "created_at": s.created_at,
+                }
+                for s in sessions[:10]  # Limit to 10 most recent
+            ],
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+
+@router.post("/api/test/streaming")
+async def test_streaming() -> dict:
+    """
+    Test endpoint for streaming functionality.
+    
+    Returns a test session that completes quickly for SSE testing.
+    """
+    try:
+        manager = get_research_manager()
+        session_id = f"test-stream-{uuid.uuid4().hex[:8]}"
+        
+        # Start a test research (will use actual graph)
+        await manager.start_research("Test query for streaming", session_id)
+        
+        return {
+            "status": "started",
+            "session_id": session_id,
+            "stream_url": f"/api/research/{session_id}/events",
+            "stop_url": f"/api/research/{session_id}/stop",
+            "note": "This will take 5-10 minutes as it runs the full graph",
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }

@@ -52,7 +52,7 @@ The system uses 5 specialized agents in a LangGraph workflow:
 | **Phase 1** | ✅ Complete | Backend core: config, adapter, state, checkpointer |
 | **Phase 2** | ✅ Complete | Planner Agent - Query decomposition + LangGraph setup |
 | **Phase 3** | ✅ Complete | All 5 Agents + Full Graph Assembly with conditional routing |
-| **Phase 4** | 🔄 In Progress | Streaming & Interruption (SSE, stop/resume) |
+| **Phase 4** | ✅ Complete | Streaming & Interruption (SSE, stop/resume) |
 | **Phase 5** | ⏳ Pending | Frontend Dashboard (Mission Control) |
 | **Phase 6** | ⏳ Pending | Integration & Polish |
 
@@ -203,6 +203,44 @@ curl -X POST http://localhost:8000/api/test/graph
 | `/api/test/reviewer` | ✅ | 3 gaps detected, 0.88 confidence |
 | `/api/test/writer` | ✅ | 1200-word report, 6 sections, 3 citations |
 | `/api/test/graph` | ✅ | Full pipeline (Planner→Finder→Summarizer→Reviewer→Writer) |
+
+### Streaming & Interruption (Phase 4)
+
+```bash
+# 10. Start Research with Streaming
+curl -X POST http://localhost:8000/api/research/start \
+  -H "Content-Type: application/json" \
+  -d '{"query": "AI in healthcare 2024"}'
+# Response: {"status":"started","session_id":"research-abc123",...}
+
+# 11. Stream Events (SSE)
+curl http://localhost:8000/api/research/research-abc123/events
+# Stream: connected → research_started → heartbeat → ... → completed
+
+# 12. Stop Running Research
+curl -X POST http://localhost:8000/api/research/research-abc123/stop
+# Response: {"status":"stopped",...}
+
+# 13. Check Research Status
+curl http://localhost:8000/api/research/research-abc123/status
+# Response: Current progress and results
+
+# 14. List All Sessions
+curl http://localhost:8000/api/research/sessions
+# Response: All research sessions
+```
+
+### Streaming Event Types
+
+| Event Type | Description |
+|------------|-------------|
+| `connected` | SSE connection established |
+| `research_started` | Research session began |
+| `heartbeat` | Keep-alive ping (every second) |
+| `research_completed` | Research finished successfully |
+| `research_error` | Research failed |
+| `research_stopped` | Research was manually stopped |
+| `done` | Stream closing |
 
 ### Verify GPU is Working
 
@@ -371,8 +409,10 @@ curl http://localhost:11434/api/tags | grep gpt-oss
   - Reviewer: Gap detection, iteration triggers
   - Writer: Report synthesis with citations
 - ✅ Full Graph: Complete pipeline with conditional routing
+- ✅ Streaming: SSE endpoints for real-time progress
+- ✅ Interruption: Stop/resume functionality
 - ✅ All Libraries Up-to-Date (verified Feb 2026)
-- 🔄 Phase 4 Next: Streaming & Interruption (SSE endpoints)
+- 🔄 Phase 5 Next: Frontend Dashboard (Mission Control)
 
 See `/agent/PLAN.md` for detailed execution roadmap.
 
