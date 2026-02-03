@@ -98,15 +98,26 @@ class WriterAgent:
             context_parts.append(f"{i}. {question}")
         context_parts.append("")
 
-        # All findings
+        # All findings with EXPLICIT source numbering for citations
         context_parts.append(f"## Research Findings ({len(findings)} sources)\n")
+        context_parts.append("**SOURCE NUMBERING FOR CITATIONS (CRITICAL - USE THESE EXACT NUMBERS):**")
         for i, finding in enumerate(findings, 1):
-            context_parts.append(f"### Finding {i}")
+            source_info = finding.get("source_info", {})
+            url = source_info.get('url', 'Unknown')
+            title = source_info.get('title', 'Unknown')
+            context_parts.append(f"  [{i}] {title} - {url}")
+        context_parts.append("")
+        context_parts.append("---")
+        context_parts.append("")
+        
+        for i, finding in enumerate(findings, 1):
+            context_parts.append(f"### Finding {i} (Source [{i}])")
 
             # Source info
             source_info = finding.get("source_info", {})
-            context_parts.append(f"**Source**: {source_info.get('url', 'Unknown')}")
-            context_parts.append(f"**Title**: {source_info.get('title', 'Unknown')}")
+            context_parts.append(f"**Source URL**: {source_info.get('url', 'Unknown')}")
+            context_parts.append(f"**Source Title**: {source_info.get('title', 'Unknown')}")
+            context_parts.append(f"**Citation Number**: [{i}] (USE THIS EXACT NUMBER)")
             context_parts.append(f"**Reliability**: {source_info.get('reliability', 'unknown')}")
 
             # Summary
@@ -187,6 +198,9 @@ class WriterAgent:
         if not report.get("sources_used"):
             report["sources_used"] = self._extract_sources_from_findings(findings)
 
+        # Validate and fix citations
+        report = self._validate_citations(report, findings)
+
         # Ensure word_count is set
         if not report.get("word_count"):
             total_text = report.get("executive_summary", "")
@@ -217,6 +231,55 @@ class WriterAgent:
                 })
 
         return sources
+
+    def _validate_citations(
+        self,
+        report: dict[str, Any],
+        findings: List[dict],
+    ) -> dict[str, Any]:
+        """
+        Validate citations in report content match available sources.
+        
+        Removes or fixes citations that don't correspond to actual sources.
+        """
+        import re
+        
+        max_valid_citation = len(findings)
+        if max_valid_citation == 0:
+            logger.warning("No findings available for citation validation")
+            return report
+        
+        # Pattern to match citations like [1], [2], [1][2], etc.
+        citation_pattern = r'\[(\d+)\]'
+        
+        def fix_citations_in_text(text: str) -> str:
+            """Remove invalid citations from text."""
+            def replace_invalid_citation(match):
+                citation_num = int(match.group(1))
+                if 1 <= citation_num <= max_valid_citation:
+                    return match.group(0)  # Keep valid citation
+                else:
+                    logger.warning(f"Removing invalid citation [{citation_num}], max valid is [{max_valid_citation}]")
+                    return ""  # Remove invalid citation
+            
+            return re.sub(citation_pattern, replace_invalid_citation, text)
+        
+        # Fix citations in executive_summary
+        if report.get("executive_summary"):
+            report["executive_summary"] = fix_citations_in_text(report["executive_summary"])
+        
+        # Fix citations in sections
+        for section in report.get("sections", []):
+            if section.get("content"):
+                section["content"] = fix_citations_in_text(section["content"])
+        
+        # Ensure sources_used matches findings
+        report["sources_used"] = self._extract_sources_from_findings(findings)
+        
+        # Log validation result
+        logger.info(f"Citation validation complete. Valid range: [1]-[{max_valid_citation}]")
+        
+        return report
 
     def _create_error_report(self, error_message: str) -> dict[str, Any]:
         """Create a minimal report structure for error cases."""
