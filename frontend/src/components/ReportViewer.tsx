@@ -37,7 +37,7 @@ const pdfStyles = StyleSheet.create({
     paddingBottom: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
     color: '#000',
