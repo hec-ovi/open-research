@@ -336,12 +336,7 @@ open-research/
 │       └── pages/
 │           └── MissionControl.tsx  # Main dashboard
 │
-└── agent/                      # Project tracking
-    ├── PLAN.md
-    ├── PLAN2.md
-    ├── PLAN3.md
-    ├── PLAN4.md
-    └── MEMORY.md
+
 ```
 
 ---
