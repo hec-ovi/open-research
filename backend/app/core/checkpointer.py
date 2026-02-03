@@ -1,13 +1,13 @@
 """
 SQLite Checkpointer - LangGraph State Persistence
 
-This module provides SQLite-based checkpointing for LangGraph,
+This module provides checkpointing for LangGraph,
 enabling:
-- Research session persistence across interruptions
+- Research session persistence during runtime
 - Resume capability for long-running research
 
-Note: For Phase 2, using InMemorySaver to avoid async SQLite complexity.
-Phase 3+ will implement proper SQLite persistence.
+Currently uses InMemorySaver for session state management.
+SQLite persistence can be added in future iterations if needed.
 """
 
 from pathlib import Path
@@ -21,17 +21,15 @@ class Checkpointer:
     """
     Checkpointer for LangGraph state persistence.
     
-    Current Implementation (Phase 2):
-    - Uses InMemorySaver for simplicity
-    
-    Future (Phase 3+):
-    - Will use AsyncSqliteSaver for persistence
+    Uses InMemorySaver for runtime session management.
+    Provides an interface for future SQLite persistence if needed.
     
     Attributes:
         saver: InMemorySaver instance
+        db_path: Path for potential future database storage
     
     Example:
-        >>> checkpointer = Checkpointer()
+        >>> checkpointer = get_checkpointer()
         >>> graph = StateGraph(...).compile(checkpointer=checkpointer.saver)
     """
     
@@ -52,8 +50,8 @@ class Checkpointer:
         self.db_path = Path(settings.DATABASE_PATH)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Use InMemorySaver for Phase 2
-        # Phase 3 will implement AsyncSqliteSaver properly
+        # Using InMemorySaver for runtime session management
+        # SQLite persistence available via langgraph-checkpoint-sqlite if needed
         self.saver = InMemorySaver()
         
         self._initialized = True
@@ -63,17 +61,17 @@ class Checkpointer:
         Get database statistics.
         
         Returns:
-            dict: Statistics (currently in-memory only)
+            dict: Statistics (in-memory mode)
         """
         db_size = self.db_path.stat().st_size if self.db_path.exists() else 0
         
         return {
-            "sessions": 0,  # In-memory, no persistence yet
+            "sessions": 0,  # In-memory tracking
             "checkpoints": 0,
             "db_size_bytes": db_size,
             "db_size_mb": round(db_size / (1024 * 1024), 2),
             "mode": "in_memory",
-            "note": "SQLite persistence coming in Phase 3",
+            "note": "Runtime session persistence via InMemorySaver",
         }
 
 

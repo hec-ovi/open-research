@@ -41,7 +41,7 @@ class ResearchGraph:
     This class encapsulates the LangGraph StateGraph definition,
     including all nodes, edges, and conditional routing.
     
-    Complete Workflow (Phase 3.5):
+    Complete Workflow:
     1. Planner: Decomposes query into sub-questions
     2. Finder: Discovers sources for each sub-question
     3. Summarizer: Compresses source content

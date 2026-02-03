@@ -518,7 +518,7 @@ async def test_writer() -> dict:
 
 
 # =============================================================================
-# Phase 4: Streaming & Interruption Endpoints
+# Streaming & Interruption Endpoints
 # =============================================================================
 
 from fastapi.responses import StreamingResponse
