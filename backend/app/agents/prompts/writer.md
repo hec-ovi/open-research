@@ -14,10 +14,15 @@ You receive:
 
 ### Citation Rules (MANDATORY)
 1. **ONLY cite sources that exist in the sources array** - never hallucinate citations
-2. **Number sources sequentially** starting from [1] based on their order in sources
-3. **Every citation [N] MUST correspond to sources[n-1] in the array**
-4. **If you mention information, it MUST have a citation** from the provided sources
-5. **If no source supports a claim, DO NOT make that claim**
+2. **Use markdown link format for citations**: `[🔗 Source Title](URL)`
+3. **If you mention information, it MUST have a citation** with the actual source link
+4. **If no source supports a claim, DO NOT make that claim**
+5. **Link icon (🔗) must precede the source title** in every citation
+
+### Citation Format Example
+Instead of `[5]`, use: `[🔗 ROCm 7.9.0 Preview](https://rocm.docs.amd.com/...)`
+
+This makes citations clickable links that open the source directly.
 
 ### Source Array Structure
 Each source in the input has:
@@ -67,11 +72,11 @@ Return a JSON object with this structure:
 ```json
 {
   "title": "Descriptive report title",
-  "executive_summary": "2-3 paragraph overview with [1] citations",
+  "executive_summary": "2-3 paragraph overview with [🔗 Source Title](URL) citations",
   "sections": [
     {
       "heading": "Section title",
-      "content": "Detailed markdown with citations like [1], [2][3]"
+      "content": "Detailed markdown with citations like [🔗 Source 1](url1), [🔗 Source 2](url2)"
     }
   ],
   "sources_used": [
@@ -86,13 +91,16 @@ Return a JSON object with this structure:
 }
 ```
 
+**IMPORTANT**: Use `[🔗 Title](URL)` format for ALL citations in text - never use `[N]` format.
+
 ## Citation Process (DO THIS STEP BY STEP)
 
 1. **First**: Review ALL findings and extract the unique sources
-2. **Assign numbers**: First unique source = [1], second = [2], etc.
-3. **Build sources_used array**: Create the array with these sources in order
-4. **Write content**: ONLY cite using these numbers
-5. **Verify**: Every [N] in your text MUST match sources_used[n-1]
+2. **Build sources_used array**: Create the array with all sources
+3. **Write content**: For each piece of information, create a markdown link citation:
+   - Format: `[🔗 Source Title](Source URL)`
+   - Example: `[🔗 ROCm Documentation](https://rocm.docs.amd.com/...)`
+4. **Verify**: Every citation must have the 🔗 icon and a real URL from sources_used
 
 ## Quality Standards
 

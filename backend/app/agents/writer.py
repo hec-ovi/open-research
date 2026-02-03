@@ -105,26 +105,32 @@ class WriterAgent:
             context_parts.append(f"{i}. {question_text}")
         context_parts.append("")
 
-        # All findings with EXPLICIT source numbering for citations
+        # All findings with citation information
         context_parts.append(f"## Research Findings ({len(findings)} sources)\n")
-        context_parts.append("**SOURCE NUMBERING FOR CITATIONS (CRITICAL - USE THESE EXACT NUMBERS):**")
+        context_parts.append("**CITATION FORMAT (CRITICAL - USE MARKDOWN LINKS):**")
+        context_parts.append('Format: [🔗 Source Title](Source URL)')
+        context_parts.append("")
+        context_parts.append("**Available Sources:**")
         for i, finding in enumerate(findings, 1):
             source_info = finding.get("source_info", {})
             url = source_info.get('url', 'Unknown')
             title = source_info.get('title', 'Unknown')
-            context_parts.append(f"  [{i}] {title} - {url}")
+            context_parts.append(f"  Source {i}: [{title}]({url})")
         context_parts.append("")
         context_parts.append("---")
         context_parts.append("")
         
         for i, finding in enumerate(findings, 1):
-            context_parts.append(f"### Finding {i} (Source [{i}])")
+            source_info = finding.get("source_info", {})
+            url = source_info.get('url', 'Unknown')
+            title = source_info.get('title', 'Unknown')
+            
+            context_parts.append(f"### Finding {i}")
 
             # Source info
-            source_info = finding.get("source_info", {})
-            context_parts.append(f"**Source URL**: {source_info.get('url', 'Unknown')}")
-            context_parts.append(f"**Source Title**: {source_info.get('title', 'Unknown')}")
-            context_parts.append(f"**Citation Number**: [{i}] (USE THIS EXACT NUMBER)")
+            context_parts.append(f"**Source URL**: {url}")
+            context_parts.append(f"**Source Title**: {title}")
+            context_parts.append(f"**Citation to use**: [🔗 {title}]({url})")
             context_parts.append(f"**Reliability**: {source_info.get('reliability', 'unknown')}")
 
             # Summary
@@ -288,46 +294,81 @@ class WriterAgent:
         findings: List[dict],
     ) -> dict[str, Any]:
         """
-        Validate citations in report content match available sources.
+        Validate citations in report content and ensure sources_used is populated.
         
-        Removes or fixes citations that don't correspond to actual sources.
+        With markdown link citations [🔗 Title](URL), we verify URLs match sources.
         """
         import re
         
-        max_valid_citation = len(findings)
-        if max_valid_citation == 0:
+        if not findings:
             logger.warning("No findings available for citation validation")
             return report
         
-        # Pattern to match citations like [1], [2], [1][2], etc.
-        citation_pattern = r'\[(\d+)\]'
+        # Extract valid URLs from findings
+        valid_urls = set()
+        for finding in findings:
+            source_info = finding.get("source_info", {})
+            url = source_info.get("url", "")
+            if url:
+                valid_urls.add(url)
         
-        def fix_citations_in_text(text: str) -> str:
-            """Remove invalid citations from text."""
-            def replace_invalid_citation(match):
-                citation_num = int(match.group(1))
-                if 1 <= citation_num <= max_valid_citation:
+        # Pattern to match markdown link citations [🔗 Title](URL)
+        link_pattern = r'\[🔗[^\]]*\]\(([^)]+)\)'
+        
+        def validate_link_citations(text: str) -> str:
+            """Validate and fix link citations in text."""
+            def replace_invalid_link(match):
+                url = match.group(1)
+                if url in valid_urls:
                     return match.group(0)  # Keep valid citation
                 else:
-                    logger.warning(f"Removing invalid citation [{citation_num}], max valid is [{max_valid_citation}]")
+                    logger.warning(f"Citation URL not in sources: {url[:60]}...")
                     return ""  # Remove invalid citation
             
-            return re.sub(citation_pattern, replace_invalid_citation, text)
+            return re.sub(link_pattern, replace_invalid_link, text)
+        
+        # Also check for old-style [N] citations and convert/warn
+        old_citation_pattern = r'\[(\d+)\]'
+        
+        def convert_old_citations(text: str) -> str:
+            """Convert old [N] citations to link format if possible."""
+            def replace_old_citation(match):
+                citation_num = int(match.group(1))
+                if 1 <= citation_num <= len(findings):
+                    # Try to get URL and title from findings
+                    finding = findings[citation_num - 1]
+                    source_info = finding.get("source_info", {})
+                    url = source_info.get("url", "")
+                    title = source_info.get("title", f"Source {citation_num}")
+                    if url:
+                        return f"[🔗 {title}]({url})"
+                logger.warning(f"Removing invalid citation [{citation_num}]")
+                return ""
+            
+            return re.sub(old_citation_pattern, replace_old_citation, text)
         
         # Fix citations in executive_summary
         if report.get("executive_summary"):
-            report["executive_summary"] = fix_citations_in_text(report["executive_summary"])
+            text = report["executive_summary"]
+            # First try to convert old-style citations
+            text = convert_old_citations(text)
+            # Then validate link citations
+            text = validate_link_citations(text)
+            report["executive_summary"] = text
         
         # Fix citations in sections
         for section in report.get("sections", []):
             if section.get("content"):
-                section["content"] = fix_citations_in_text(section["content"])
+                text = section["content"]
+                text = convert_old_citations(text)
+                text = validate_link_citations(text)
+                section["content"] = text
         
         # Ensure sources_used matches findings
         report["sources_used"] = self._extract_sources_from_findings(findings)
         
         # Log validation result
-        logger.info(f"Citation validation complete. Valid range: [1]-[{max_valid_citation}]")
+        logger.info(f"Citation validation complete. {len(valid_urls)} valid source URLs.")
         
         return report
 

@@ -194,9 +194,10 @@ User Query → Planner → Finder → Summarizer → [0 facts?] → Finder (retr
 - Executive Summary with **Markdown rendering**
 - Multiple detailed sections with **formatted headers, lists, code blocks**
 - **Sources displayed as bullet list** with complete metadata
+- **Live citation links**: Citations appear as `[🔗 Source Title](URL)` clickable links
 - Source citations with reliability ratings (High/Medium/Low)
-- **Clickable link icons** next to each source for quick access
-- **Validated citations** - all citation numbers match actual sources
+- **Clickable link icons (🔗)** inline in the text - click any citation to open source
+- **Validated citations** - all citations link to actual sources
 - Confidence assessment
 - Download as Markdown or PDF
 
