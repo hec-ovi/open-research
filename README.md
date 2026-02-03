@@ -57,8 +57,14 @@ docker logs -f deepresearch-ollama
 
 **When Complete:**
 - Report appears with Executive Summary, Sections, and Sources
+- Reports render with beautiful **Markdown styling** (headers, lists, code blocks, tables)
 - Download as **Markdown** or **PDF**
 - Click any completed session in the sidebar to view past reports
+
+**Real-time Features:**
+- **Finder sources stream as discovered** - watch sources appear one-by-one
+- **Processing animation** on active agents
+- **Automatic retry** if summarizer finds no key facts (resilience)
 
 ---
 
@@ -148,34 +154,46 @@ curl http://localhost:5173
 | Agent | Color | Role | Description |
 |-------|-------|------|-------------|
 | 🔵 **Planner** | Blue | Query Decomposition | Breaks complex queries into 6-8 sub-questions |
-| 🟢 **Finder** | Green | Source Discovery | Discovers diverse sources via DuckDuckGo |
-| 🟡 **Summarizer** | Amber | Content Compression | 10:1 compression with key facts extraction |
+| 🟢 **Finder** | Green | Source Discovery | Discovers diverse sources via DuckDuckGo (streams in real-time) |
+| 🟡 **Summarizer** | Amber | Content Compression | 10:1 compression with key facts extraction (auto-retry on failure) |
 | 🟣 **Reviewer** | Violet | Quality Control | Detects gaps, triggers iteration loops |
-| 🩷 **Writer** | Pink | Report Synthesis | Professional report with citations |
+| 🩷 **Writer** | Pink | Report Synthesis | Professional report with validated citations |
+
+**Resilience Features:**
+- **Finder Streaming**: Sources appear one-by-one as discovered (not batched)
+- **Summarizer Retry**: If 0 key facts extracted, automatically extends search and retries
+- **Citation Validation**: All citations are validated against actual sources (no hallucination)
 
 ### Data Flow
 
 ```
-User Query → Planner → Finder → Summarizer → Reviewer → [Gaps?] → Writer → Report
-                              ↑_______________|
+User Query → Planner → Finder → Summarizer → [0 facts?] → Finder (retry)
+                                              ↓
+                                         Reviewer → [Gaps?] → Planner (iterate)
+                                              ↓
+                                           Writer → Report
 ```
 
-**Iteration Loop:** If the Reviewer detects gaps and max iterations (default 3) not reached, research loops back to the Planner for deeper investigation.
+**Resilience Loops:**
+- **Summarizer Retry:** If 0 key facts extracted, loops back to Finder for extended search (max 2 retries)
+- **Reviewer Iteration:** If gaps detected and max iterations not reached, loops back to Planner for deeper investigation
 
 ---
 
 ## 🎛️ Dashboard Features
 
 ### Real-time Monitoring
-- **Agent Pipeline Visualization** - See which agent is active
-- **Progress Bar** - Overall completion percentage
+- **Agent Pipeline Visualization** - See which agent is active with processing animation
+- **Progress Bar** - Overall completion percentage with shimmer effect
 - **Event Log** - Live SSE events with color-coding per agent
+- **Finder Streaming** - Watch sources appear one-by-one as discovered
 - **Session List** - Auto-refreshing list of all research sessions
 
 ### Report Viewer
-- Executive Summary
-- Multiple detailed sections
+- Executive Summary with **Markdown rendering**
+- Multiple detailed sections with **formatted headers, lists, code blocks**
 - Source citations with reliability ratings (High/Medium/Low)
+- **Validated citations** - all citation numbers match actual sources
 - Confidence assessment
 - Download as Markdown or PDF
 
