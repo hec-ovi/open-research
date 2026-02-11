@@ -1,5 +1,23 @@
 # Deep Research System
 
+## App Screenshots
+
+1. Home page with a search active
+
+![Home page with search active](screenshots/screenshot1.jpg)
+
+2. Result screen with PDF download, Markdown download, and preview with sources
+
+![Result screen with downloads and cited preview](screenshots/screenshot2.jpg)
+
+3. Config panel
+
+![Config panel](screenshots/screenshot3.jpg)
+
+4. Sessions menu
+
+![Sessions menu](screenshots/screenshot4.jpg)
+
 Production-oriented local deep-research platform with:
 - multi-agent orchestration (`Planner -> Finder -> Summarizer -> Reviewer -> Writer`)
 - durable session + document persistence (SQLite on host-mounted path)
