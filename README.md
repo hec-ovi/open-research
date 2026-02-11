@@ -18,8 +18,9 @@ Production-oriented local deep-research platform with:
 - Session memory:
   - new runs can use recent completed sessions as planning context
 - UI:
-  - Light/Dark mode toggle
-  - bounded workspace panels (sidebar + event log aligned height)
+  - System / Light / Dark theme modes
+  - bounded unified workspace panel (agent pipeline + event log aligned height)
+  - session history drawer with quick open/download/delete actions
   - separate full result screen
 - Testing:
   - backend test suite under `backend/tests/`
@@ -64,7 +65,6 @@ frontend/
     stores/
     types/
 ollama/
-agent/
 ```
 
 ## Prerequisites
@@ -177,6 +177,7 @@ curl -X POST http://localhost:8000/api/research/start \
 - `POST /api/research/{session_id}/stop`
 - `GET /api/research/{session_id}/status`
 - `GET /api/research/sessions`
+- `DELETE /api/research/sessions/{session_id}`
 - `GET /api/research/sessions/{session_id}/report`
 - `GET /api/research/sessions/{session_id}/documents`
 - `GET /api/research/sessions/{session_id}/documents/{document_id}`
@@ -187,12 +188,13 @@ The project currently includes `api/test/*` endpoints for validating individual 
 
 ## Frontend UX Notes
 
-- Workspace preserves:
-  - sidebar with agent progress + sessions
-  - top progress tracker
-- Event log panel height is bounded to align with sidebar height.
+- Workspace includes:
+  - top research input + progress tracker
+  - unified panel with agent pipeline (left) and event log (right)
+  - session history in a slide-out drawer
+- Running sessions can be resumed after refresh; event history is replayed before live events continue.
 - Result report is rendered on a separate screen (`ResultScreen`) instead of inline with running telemetry.
-- Theme supports light/dark mode with persistent preference.
+- Theme supports system/light/dark with persistent preference.
 
 ## Persistence Model
 
@@ -226,7 +228,7 @@ Then set `OLLAMA_MODELS_DIR=./data/ollama` in `.env` and start normally with the
 ### Backend tests (recommended inside Docker)
 
 ```bash
-docker compose run --no-deps --rm backend sh -lc "pip install -e '.[dev]' && PYTHONPATH=/app pytest -q"
+docker exec deepresearch-backend sh -lc "cd /app && PYTHONPATH=/app uv run --extra dev pytest -q tests"
 ```
 
 ### Frontend production build
