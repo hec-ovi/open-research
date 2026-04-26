@@ -1,4 +1,19 @@
-# Deep Research System
+<h1 align="center">open-research</h1>
+
+<p align="center">
+  <strong>Local deep-research multi-agent system: Planner / Finder / Summarizer / Reviewer / Writer pipeline with SSE telemetry, durable sessions, and PDF + Markdown report exports.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Working-brightgreen" alt="Status" />
+  <img src="https://img.shields.io/badge/LangGraph-Multi--agent-1C3D5A" alt="LangGraph" />
+  <img src="https://img.shields.io/badge/Ollama-111111?logo=ollama&logoColor=white" alt="Ollama" />
+  <img src="https://img.shields.io/badge/AMD-ROCm-ED1C24?logo=amd&logoColor=white" alt="ROCm" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
+</p>
+
+---
 
 ## App Screenshots
 
@@ -298,4 +313,4 @@ If deploying outside local machine scope, add:
 
 ## License
 
-Use according to your project license policy.
+[MIT](LICENSE) for original code in this repository (FastAPI orchestration backend, React frontend, scripts, Compose configs). Third-party services pulled at runtime (Ollama, the underlying LLM, web search providers) retain their own upstream licenses.
